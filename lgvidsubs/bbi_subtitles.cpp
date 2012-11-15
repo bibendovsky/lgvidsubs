@@ -17,7 +17,7 @@ namespace {
         }
 
         bool operator () (
-            const Subtitle& subtitle)
+            const bbi::Subtitle& subtitle)
         {
             return (mTime >= subtitle.timeBegin) && (mTime <= subtitle.timeEnd);
         }
@@ -102,7 +102,7 @@ Subtitles::~Subtitles ()
 
 void Subtitles::processPicture (
     double pts,
-    const SubtitleList& subtitles,
+    const bbi::SubtitleList& subtitles,
     const ILGVideoDecoderHost::sFrameFormat& frameFormat,
     const ILGVideoDecoderHost::sLockResult& lock)
 {
@@ -199,7 +199,7 @@ void Subtitles::processPicture (
     // Convert to milliseconds
     int time = static_cast<int> (pts * 1000.0);
 
-    SubtitleList::const_iterator it = std::find_if (
+    bbi::SubtitleList::const_iterator it = std::find_if (
         subtitles.begin (), subtitles.end (), SubtitlePred (time));
 
     if (it == subtitles.end ())
@@ -212,15 +212,15 @@ void Subtitles::processPicture (
     size_t lineCount = it->lines.size ();
     mLinesSizes.resize (lineCount);
 
-    const std::string space = " ";
+    const bbi::WString space = L" ";
 
     int height = 0;
 
     // Calculate subtitles rectangle
     for (size_t i = 0, n = lineCount; i < n; ++i) {
         SIZE& lineSize = mLinesSizes[i];
-        const std::string& line = it->lines.at (i).empty () ? space : it->lines.at (i);
-        BOOL extResult = ::GetTextExtentPoint32 (mMemDc, line.c_str (), line.size (), &lineSize);
+        const bbi::WString& line = it->lines.at (i).empty () ? space : it->lines.at (i);
+        BOOL extResult = ::GetTextExtentPoint32W (mMemDc, line.c_str (), line.size (), &lineSize);
         height += lineSize.cy;
     }
 
@@ -229,10 +229,10 @@ void Subtitles::processPicture (
 
     for (size_t i = 0, n = lineCount; i < n; ++i) {
         const SIZE& lineSize = mLinesSizes.at (i);
-        const std::string& line = it->lines.at (i);
+        const bbi::WString& line = it->lines.at (i);
         int x = (frameFormat.width - lineSize.cx) / 2;
 
-        BOOL textResult = ::TextOutA (mMemDc, x, y, line.c_str (), line.size ());
+        BOOL textResult = ::TextOutW (mMemDc, x, y, line.c_str (), line.size ());
 
         y += lineSize.cy;
     }

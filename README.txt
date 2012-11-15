@@ -17,12 +17,110 @@ Same as unofficial DarkEngine patch.
 
 Installation
 ------------
-Just replace lgvid.dll in game folder with a new one.
+Extract "lgvid.dll" and "d3d9.dll" into the game folder.
+
+
+Configuration options for "cam_ext.cfg"
+---------------------------------------
+
+Note, some values can be marked as percents. In that case the
+value will be converted to pixels by the folowing expression:
+
+value_pixels = screen_height * value_percents / 100
+
+
+subs_font_family <name>
+-----------------------
+Font family name.
+Default value: Arial
+
+
+subs_font_size <pixels|percents%>
+---------------------------------
+Font size.
+Default value: 7%
+Valid range (%):  1.5 .. 13
+Valid range (pixels): 8 .. 64
+
+
+subs_font_weight <value>
+------------------------
+Font size.
+Default value: 0
+Valid range:  0 .. 1000
+
+Some useful values:
+0 - don't care/default;
+300 - light;
+400 - normal;
+700 - bold.
+
+(See LOGFONT structure in MSDN for more info.)
+
+
+
+subs_font_color <r> <g> <b> <a>
+-------------------------------
+Text color.
+Default value: 1.0 1.0 1.0 1.0 (solid white)
+Valid range of component: 0.0 .. 1.0
+
+
+subs_shadow_color <r> <g> <b> <a>
+---------------------------------
+Text's shadow color.
+Default value: 0.0 0.0 0.0 0.0 (solid black)
+Valid range of component: 0.0 .. 1.0
+
+
+subs_shadow_offset_x <pixels|percents%>
+---------------------------------------
+Text's shadow offset by X.
+Default value: 0.42%
+Valid range (%):  -1.45 .. 1.45
+Valid range (pixels): -7 .. 7
+
+
+subs_shadow_offset_y <pixels|percents%>
+---------------------------------------
+Text's shadow offset by Y.
+Default value: 0.42%
+Valid range (%):  -1.45 .. 1.45
+Valid range (pixels): -7 .. 7
+
+
+subs_space_after <pixels|percents%>
+-----------------------------------
+Offset of text of screen's bottom.
+Default value: 3.5%
+Valid range (%):  0 .. 13
+Valid range (pixels): 0 .. 64
+
+
+Example:
+--------
+subs_font_family arial
+subs_font_size 8.0%
+subs_font_color 0.8 1.0 0.8 1.0
+subs_shadow_color 0.0 0.0 0.0 0.7
+subs_shadow_offset_x 2
+subs_shadow_offset_y 1
+subs_space_after 4.0%
+
 
 
 ==========
 Change log
 ----------
+
+----------
+2012.11.15
+----------
+
+Moved on to MSVC 2010 EE.
+Replaced a GDI rendering with a Direct3D 9 (via wrapper dll) one.
+Added new configuration options to "cam_ext.cfg".
+
 
 ----------
 2012.11.09

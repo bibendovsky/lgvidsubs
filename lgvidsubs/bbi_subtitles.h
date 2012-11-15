@@ -4,9 +4,8 @@
 
 #include <windows.h>
 
+#include "bbi_subtitle.h"
 #include "lgviddecoder.h"
-
-#include "bbi_srt_parser.h"
 
 
 class Subtitles {
@@ -17,7 +16,7 @@ public:
 
     void processPicture (
         double pts, // frame time (in seconds)
-        const SubtitleList& subtitles,
+        const bbi::SubtitleList& subtitles,
         const ILGVideoDecoderHost::sFrameFormat& frameFormat,
         const ILGVideoDecoderHost::sLockResult& lock);
 

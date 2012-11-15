@@ -44,10 +44,235 @@ extern "C"
 #include "lgviddecoder.h"
 
 //BBi
+#include <algorithm>
 #include <fstream>
+#include <sstream>
 
+#include "bbi_dll_context.h"
+#include "bbi_math.h"
 #include "bbi_srt_parser.h"
+#include "bbi_string_helper.h"
 #include "bbi_subtitles.h"
+
+
+bbi::DllContext* LgVidContext = 0;
+
+
+namespace {
+
+    const bbi::WString DEFAULT_FONT_FAMILY = L"Arial";
+
+    const int VALUE_BUFFER_SIZE = 128;
+    const int VALUE_BUFFER_LENGTH = VALUE_BUFFER_SIZE - 1;
+    char valueBuffer[VALUE_BUFFER_SIZE];
+
+    const bbi::WString BLANK_WSTRING = L"";
+
+    std::wistringstream ssBuffer;
+
+
+    bbi::WString readConfigString (
+        const char* keyName,
+        ILGVideoDecoderHost* host,
+        const bbi::WString& defaultValue = BLANK_WSTRING)
+    {
+        if (!host->GetConfigValue (keyName, valueBuffer, VALUE_BUFFER_LENGTH))
+            return defaultValue;
+
+        valueBuffer[VALUE_BUFFER_LENGTH] = '\0';
+
+        return bbi::StringHelper::toWString (valueBuffer);
+    }
+
+    float readConfigFloatValue (
+        const char* keyName,
+        ILGVideoDecoderHost* host,
+        float defaultValue)
+    {
+        ssBuffer.clear ();
+        ssBuffer.str (readConfigString (keyName, host));
+
+        float value;
+        ssBuffer >> value;
+
+        if (ssBuffer.fail ())
+            return defaultValue;
+
+        wchar_t anyNonSpace = '\0';
+        ssBuffer >> anyNonSpace;
+
+        if (!ssBuffer.fail ())
+            return defaultValue;
+
+        return value;
+    }
+
+    float readConfigPercentsValue (
+        const char* keyName,
+        ILGVideoDecoderHost* host,
+        float defaultValue,
+        bool defaultIsPercents,
+        bool& isPercents)
+    {
+        isPercents = defaultIsPercents;
+
+        ssBuffer.clear ();
+        ssBuffer.str (readConfigString (keyName, host));
+
+        float value;
+        ssBuffer >> value;
+
+        if (ssBuffer.fail ())
+            return defaultValue;
+
+        wchar_t percents = '\0';
+        ssBuffer >> percents;
+
+        if (ssBuffer.fail ()) {
+            defaultIsPercents = false;
+            return value;
+        }
+
+        wchar_t anyNonSpace = '\0';
+        ssBuffer >> anyNonSpace;
+
+        if (!ssBuffer.fail ())
+            return defaultValue;
+
+        return value;
+    }
+
+    unsigned readColorValue (
+        const char* keyName,
+        ILGVideoDecoderHost* host,
+        unsigned defaultValue)
+    {
+        ssBuffer.clear ();
+        ssBuffer.str (readConfigString (keyName, host));
+
+        float colorBuffer[4];
+
+        ssBuffer >> colorBuffer[0] >> colorBuffer[1] >>
+            colorBuffer[2] >> colorBuffer[3];
+
+        if (ssBuffer.fail ())
+            return defaultValue;
+
+        unsigned r = static_cast<unsigned> (
+            255.0F * bbi::Math::clamp (colorBuffer[0], 0.0F, 1.0F));
+        unsigned g = static_cast<unsigned> (
+            255.0F * bbi::Math::clamp (colorBuffer[1], 0.0F, 1.0F));
+        unsigned b = static_cast<unsigned> (
+            255.0F * bbi::Math::clamp (colorBuffer[2], 0.0F, 1.0F));
+        unsigned a = static_cast<unsigned> (
+            255.0F * bbi::Math::clamp (colorBuffer[3], 0.0F, 1.0F));
+
+        return
+            ((a & 0xFF) << 24) |
+            ((r & 0xFF) << 16) |
+            ((g & 0xFF) <<  8) |
+            ((b & 0xFF) <<  0);
+    }
+
+    void readConfigValues (
+        ILGVideoDecoderHost* host)
+    {
+        //
+        bbi::WString fontFamily = readConfigString ("subs_font_family", host);
+        if (fontFamily.empty ())
+            fontFamily = L"Arial";
+        bbi::StringHelper::copyWToC (
+            fontFamily, LgVidContext->fontFamily, bbi::DllContext::MAX_LINE_LENGTH);
+
+
+        //
+        LgVidContext->fontSize = readConfigPercentsValue (
+            "subs_font_size", host, bbi::DllContext::DEFAULT_FONT_SIZE_PCT,
+            true, LgVidContext->fontSizeInPercents);
+
+        if (LgVidContext->fontSizeInPercents) {
+            LgVidContext->fontSize = bbi::Math::clamp (
+                LgVidContext->fontSize,
+                bbi::DllContext::MIN_FONT_SIZE_PCT,
+                bbi::DllContext::MAX_FONT_SIZE_PCT);
+        } else {
+            LgVidContext->fontSize = bbi::Math::clamp (
+                LgVidContext->fontSize,
+                bbi::DllContext::MIN_FONT_SIZE_PIX,
+                bbi::DllContext::MAX_FONT_SIZE_PIX);
+        }
+
+        //
+        LgVidContext->fontWeight = readConfigFloatValue (
+            "subs_font_weight", host, bbi::DllContext::DEFAULT_FONT_WEIGHT);
+
+        LgVidContext->fontWeight = bbi::Math::clamp (
+            LgVidContext->fontWeight,
+            bbi::DllContext::MIN_FONT_WEIGHT,
+            bbi::DllContext::MAX_FONT_WEIGHT);
+
+        //
+        LgVidContext->fontColor = readColorValue (
+            "subs_font_color", host, bbi::DllContext::DEFAULT_FONT_COLOR);
+
+        //
+        LgVidContext->shadowColor = readColorValue (
+            "subs_shadow_color", host, bbi::DllContext::DEFAULT_SHADOW_COLOR);
+
+        //
+        LgVidContext->shadowOffsetX = readConfigPercentsValue (
+            "subs_shadow_offset_x", host, bbi::DllContext::DEFAULT_SHADOW_OFFSET_PCT,
+            true, LgVidContext->shadowOffsetXInPercents);
+
+        if (LgVidContext->shadowOffsetXInPercents) {
+            LgVidContext->shadowOffsetX = bbi::Math::clamp (
+                LgVidContext->shadowOffsetX,
+                bbi::DllContext::MIN_SHADOW_OFFSET_PCT,
+                bbi::DllContext::MAX_SHADOW_OFFSET_PCT);
+        } else {
+            LgVidContext->shadowOffsetX = bbi::Math::clamp (
+                LgVidContext->shadowOffsetX,
+                bbi::DllContext::MIN_SHADOW_OFFSET_PIX,
+                bbi::DllContext::MAX_SHADOW_OFFSET_PIX);
+        }
+
+        //
+        LgVidContext->shadowOffsetY = readConfigPercentsValue (
+            "subs_shadow_offset_y", host, bbi::DllContext::DEFAULT_SHADOW_OFFSET_PCT,
+            true, LgVidContext->shadowOffsetYInPercents);
+
+        if (LgVidContext->shadowOffsetYInPercents) {
+            LgVidContext->shadowOffsetY = bbi::Math::clamp (
+                LgVidContext->shadowOffsetY,
+                bbi::DllContext::MIN_SHADOW_OFFSET_PCT,
+                bbi::DllContext::MAX_SHADOW_OFFSET_PCT);
+        } else {
+            LgVidContext->shadowOffsetY = bbi::Math::clamp (
+                LgVidContext->shadowOffsetY,
+                bbi::DllContext::MIN_SHADOW_OFFSET_PIX,
+                bbi::DllContext::MAX_SHADOW_OFFSET_PIX);
+        }
+
+        //
+        LgVidContext->spaceAfter = readConfigPercentsValue (
+            "subs_space_after", host, bbi::DllContext::DEFAULT_SPACE_AFTER_PCT,
+            true, LgVidContext->spaceAfterInPercents);
+
+        if (LgVidContext->spaceAfterInPercents) {
+            LgVidContext->spaceAfter = bbi::Math::clamp (
+                LgVidContext->spaceAfter,
+                bbi::DllContext::MIN_SPACE_AFTER_PCT,
+                bbi::DllContext::MAX_SPACE_AFTER_PCT);
+        } else {
+            LgVidContext->spaceAfter = bbi::Math::clamp (
+                LgVidContext->spaceAfter,
+                bbi::DllContext::MIN_SPACE_AFTER_PIX,
+                bbi::DllContext::MAX_SPACE_AFTER_PIX);
+        }
+    }
+
+
+} // namespace
 //BBi
 
 
@@ -876,7 +1101,8 @@ struct VideoState
 	int             refresh;
 
     //BBi
-    SubtitleList subtitles;
+    bbi::SubtitleList subtitles;
+    HMODULE d3d9Library;
     //BBi
 
 	VideoState(cLGVideoDecoder *pOuter_)
@@ -921,7 +1147,9 @@ struct VideoState
 		refresh(0)
 
         //BBi
-        , subtitles ()
+        ,
+        subtitles (),
+        d3d9Library (0)
         //BBi
 	{
 		audio_buf = audio_buf1;
@@ -1114,9 +1342,28 @@ struct VideoState
         std::ifstream srtStream (subFileName.c_str ());
 
         if (srtStream.is_open ())
-            subtitles = SrtParser::parse (srtStream);
+            subtitles = bbi::SrtParser::parse (srtStream);
         else
             subtitles.clear ();
+
+
+        if (!subtitles.empty ()) {
+            d3d9Library = ::LoadLibraryW (L".\\d3d9.dll");
+
+            if (d3d9Library != 0) {
+                LgVidContext = reinterpret_cast<bbi::DllContext*> (
+                    ::GetProcAddress (d3d9Library, "LgVidContext"));
+
+                if (LgVidContext != 0) {
+                    readConfigValues (pOuter->m_pHostIface);
+
+                    LgVidContext->showSubs = true;
+                    LgVidContext->lineCount = 0;
+                    LgVidContext->subIndex = 0;
+                }
+            } else
+                Warning (("%s\n", "Failed to load a Direct3D wrapper (.\d3d9.dll)."));
+        }
         //BBi
 
 		return TRUE;
@@ -1126,6 +1373,16 @@ struct VideoState
 
 	void Close()
 	{
+        //BBi
+        if (LgVidContext != 0)
+            LgVidContext->showSubs = false;
+
+        if (d3d9Library != 0) {
+            ::FreeLibrary (d3d9Library);
+            d3d9Library = 0;
+        }
+        //BBi
+
 		Stop();
 
 		if (reformat_ctx)
@@ -1678,6 +1935,29 @@ protected:
 		return 0;
 	}
 private:	
+
+    //BBi
+    // Predicate for searching subtitle with a specified time (milliseconds).
+    class SubtitlePred {
+    public:
+        SubtitlePred (
+            int time) :
+                mTime (time)
+        {
+        }
+
+        bool operator () (
+            const bbi::Subtitle& subtitle)
+        {
+            return (mTime >= subtitle.timeBegin) && (mTime <= subtitle.timeEnd);
+        }
+
+
+    private:
+        int mTime;
+    }; // class SubtitlePred
+    //BBi
+
 	double synchronize_video(AVFrame *src_frame, double pts)
 	{
 		double frame_delay;
@@ -1737,7 +2017,19 @@ private:
 			is->video_st->codec->height, data, stride);
 
         //BBi
-        subtitles.processPicture (pts, is->subtitles, fmt, lock);
+        if (LgVidContext != 0) {
+            // Convert to milliseconds
+            int time = static_cast<int> (pts * 1000.0);
+
+            bbi::SubtitleList::const_iterator it = std::find_if (
+                is->subtitles.begin (), is->subtitles.end (), SubtitlePred (time));
+
+            if (it != is->subtitles.end ()) {
+                ++LgVidContext->subIndex;
+                LgVidContext->importSubtile (&(*it));
+            } else
+                LgVidContext->importSubtile (0);
+        }
         //BBi
 
 		is->pOuter->m_pHostIface->UnlockBuffer(vp->bmp);
