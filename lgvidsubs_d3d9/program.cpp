@@ -17,8 +17,7 @@ typedef std::basic_string<TCHAR> TString;
 typedef IDirect3D9* (WINAPI* FP_DIRECT3DCREATE9) (UINT SDKVersion);
 
 
-IDirect3D9* WINAPI Direct3DCreate9 (
-    UINT SDKVersion)
+IDirect3D9* WINAPI Direct3DCreate9 (UINT SDKVersion)
 {
     UINT nameLength = ::GetSystemDirectory (0, 0);
 

@@ -9,16 +9,16 @@
 namespace bbi {
 
 
-    typedef std::string String;
-    typedef std::wstring WString;
+typedef std::string String;
+typedef std::wstring WString;
 
 #ifdef _UNICODE
-    typedef WString TString;
+typedef WString TString;
 #else
-    typedef String TString;
+typedef String TString;
 #endif // _UNICODE
 
-    typedef std::vector<WString> WStringList;
+typedef std::vector<WString> WStringList;
 
 
 } // namespace bbi

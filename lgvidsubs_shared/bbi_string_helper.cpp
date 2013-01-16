@@ -1,26 +1,86 @@
 #include <locale>
 #include <memory>
 
+#include <windows.h>
+
 #include "bbi_string_helper.h"
 
 
 namespace {
 
 
-    typedef std::codecvt<wchar_t,char,mbstate_t> WCCodeCvt;
+typedef std::wstring::size_type size_type;
 
 
-    const std::locale& oemLocale ()
-    {
-        static std::locale result (".ACP");
-        return result;
+#ifndef __MINGW32__
+typedef std::codecvt<wchar_t,char,mbstate_t> CodeCvt;
+
+
+const CodeCvt& local8_facet ()
+{
+    static std::locale local8_locale ("");
+
+    static const CodeCvt& result =
+        std::use_facet<CodeCvt> (local8_locale);
+
+    return result;
+}; // class MingwLocale
+
+template<class Facet>
+bbi::WString& convert_from (bbi::WString& string, const char* src_chars,
+    size_type src_length, const Facet& facet)
+{
+    const int BUFFER_SIZE = 16;
+
+    string.clear ();
+    mbstate_t state = { 0, };
+    wchar_t buffer[BUFFER_SIZE];
+    const char* next1;
+    wchar_t* next2;
+
+    const char* i;
+    const char* n;
+    
+    for (i = src_chars, n = i + src_length; i < n; ) {
+        std::codecvt_base::result out_result = facet.in (
+            state, i, n, next1, buffer, buffer + BUFFER_SIZE, next2);
+
+        if (out_result != std::codecvt_base::error) {
+            i = next1;
+            string.append (buffer, next2);
+        } else {
+            ++i;
+            string.append (1, L'?');
+        }
     }
 
-    const WCCodeCvt& wcCodeCvt ()
-    {
-        const WCCodeCvt& result = std::use_facet<WCCodeCvt> (oemLocale ());
-        return result;
-    }
+    return string;
+}
+#else
+// MinGW's std::locale supports only "C" locale.
+// So, this is a workaround...
+bbi::WString& convert_from (bbi::WString& string, const char* src_chars,
+    size_type src_length)
+{
+    string.clear ();    
+    
+    if (src_length == 0)
+        return string;
+
+    int dst_length = ::MultiByteToWideChar (CP_ACP, 0, src_chars, src_length,
+        NULL, 0);
+    
+    if (dst_length == 0)
+        return string;
+    
+    string.resize (dst_length);
+    
+    ::MultiByteToWideChar (CP_ACP, 0, src_chars, src_length,
+        &string[0], dst_length);
+    
+    return string;
+}
+#endif // __MINGW32__
 
 
 } // namespace
@@ -29,57 +89,36 @@ namespace {
 namespace bbi {
 
 
-    // (static)
-    WString StringHelper::toWString (
-        const String& string)
-    {
-        if (string.empty ())
-            return WString ();
+// (static)
+WString StringHelper::to_wstring (const String& string)
+{
+    if (string.empty ())
+        return WString ();
 
-        WCCodeCvt::state_type state (0);
+    WString result;
 
-        int length = wcCodeCvt ().length (
-            state, &string[0], &string[0] + string.length (), string.length ());
+#ifndef __MINGW32__    
+    return convert_from (result, string.c_str (), string.size (),
+        local8_facet ());
+#else
+    return convert_from (result, string.c_str (), string.size ());
+#endif
+}
 
-        std::auto_ptr<wchar_t> buffer (new wchar_t[length + 1]);
-
-        if (buffer.get () == 0)
-            return WString ();
-
-        const char* beyondC = 0;
-        wchar_t* beyondW = 0;
-
-        WCCodeCvt::result cvtResult = wcCodeCvt ().in (
-            state,
-            string.c_str (),
-            string.c_str () + string.length (),
-            beyondC,
-            buffer.get (),
-            buffer.get () + length,
-            beyondW);
-
-        if (cvtResult != WCCodeCvt::ok)
-            return WString ();
-
-        return WString (buffer.get (), length);
-    }
-
-    // (static)
-    void StringHelper::copyWToC (
-        const WString& wString,
-        wchar_t* cString,
-        size_t maxLength)
-    {
-        if (cString == 0)
-            return;
+// (static)
+void StringHelper::copy_w_to_c (const WString& w_string, wchar_t* c_string,
+    size_t max_length)
+{
+    if (c_string == NULL)
+        return;
 
 
-        size_t length = std::min (wString.size (), maxLength);
+    size_t length = std::min (w_string.size (), max_length);
 
-        WString::traits_type::copy (cString, wString.c_str (), length);
+    WString::traits_type::copy (c_string, w_string.c_str (), length);
 
-        cString[length] = '\0';
-    }
+    c_string[length] = '\0';
+}
 
 
 } // namespace bbi

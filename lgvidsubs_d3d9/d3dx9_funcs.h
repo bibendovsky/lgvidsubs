@@ -8,15 +8,14 @@
 
 class D3dX9Funcs {
 public:
-    D3dX9Funcs (
-        LPCTSTR libraryName);
+    D3dX9Funcs (LPCTSTR library_name);
 
     ~D3dX9Funcs ();
 
 
-    bool isInitialized () const;
+    bool is_initialized () const;
 
-    HRESULT WINAPI createFont (
+    HRESULT WINAPI create_font (
         LPDIRECT3DDEVICE9 pDevice,
         INT Height,
         UINT Width,
@@ -30,7 +29,7 @@ public:
         LPCTSTR pFacename,
         LPD3DXFONT* ppFont) const;
 
-    HRESULT WINAPI createSprite (
+    HRESULT WINAPI create_sprite (
         LPDIRECT3DDEVICE9 pDevice,
         LPD3DXSPRITE* ppSprite) const;
 
@@ -55,17 +54,15 @@ private:
         LPD3DXSPRITE* ppSprite);
 
 
-    bool mIsInitialized;
-    HMODULE mLibrary;
-    FP_D3DXCREATEFONT mCreateFont;
-    FP_D3DXCREATESPRITE mCreateSprite;
+    bool is_initialized_;
+    HMODULE library_;
+    FP_D3DXCREATEFONT create_font_;
+    FP_D3DXCREATESPRITE create_sprite_;
 
 
-    D3dX9Funcs (
-        const D3dX9Funcs& that);
+    D3dX9Funcs (const D3dX9Funcs& that);
 
-    D3dX9Funcs& operator = (
-        const D3dX9Funcs& that);
+    D3dX9Funcs& operator = (const D3dX9Funcs& that);
 }; // class D3dX9Funcs
 
 

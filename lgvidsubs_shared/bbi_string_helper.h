@@ -8,28 +8,23 @@
 namespace bbi {
 
 
-    class StringHelper {
-    public:
-        static WString toWString (
-            const String& string);
+class StringHelper {
+public:
+    static WString to_wstring (const String& string);
 
-        static void copyWToC (
-            const WString& wString,
-            wchar_t* cString,
-            size_t maxLength);
+    static void copy_w_to_c (const WString& w_string, wchar_t* c_string,
+        size_t max_length);
 
 
-    private:
-        StringHelper ();
+private:
+    StringHelper ();
 
-        StringHelper (
-            const StringHelper& that);
+    StringHelper (const StringHelper& that);
 
-        ~StringHelper ();
+    ~StringHelper ();
 
-        StringHelper& operator = (
-            const StringHelper& that);
-    }; // class StringHelper
+    StringHelper& operator = (const StringHelper& that);
+}; // class StringHelper
 
 
 } // namespace bbi

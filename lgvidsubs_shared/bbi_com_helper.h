@@ -8,31 +8,28 @@
 namespace bbi {
 
 
-    class ComHelper {
-    public:
-        template<class T>
-        static void releaseAndNull (
-            T*& object)
-        {
-            if (object == 0)
-                return;
+class ComHelper {
+public:
+    template<class T>
+    static void release_and_null (T*& object)
+    {
+        if (object == 0)
+            return;
 
-            object->Release ();
-            object = 0;
-        }
+        object->Release ();
+        object = 0;
+    }
 
 
-    private:
-        ComHelper ();
+private:
+    ComHelper ();
 
-        ComHelper (
-            const ComHelper& that);
+    ComHelper (const ComHelper& that);
 
-        ~ComHelper ();
+    ~ComHelper ();
 
-        ComHelper& operator = (
-            const ComHelper& that);
-    }; // class ComHelper
+    ComHelper& operator = (const ComHelper& that);
+}; // class ComHelper
 
 
 } // namespace bbi

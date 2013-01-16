@@ -46,9 +46,6 @@
     <ClInclude Include="fake_direct3d_device9.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="global_state.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\lgvidsubs_shared\bbi_dll_context.h">
       <Filter>Header Files</Filter>
     </ClInclude>

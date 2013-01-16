@@ -114,6 +114,14 @@ Change log
 ----------
 
 ----------
+2013.01.11
+----------
+
+Integrated FFmpeg (v1.1) into the lgvid.dll.
+Minor code changes for compiling lgvid.dll with MinGW.
+
+
+----------
 2012.11.15
 ----------
 

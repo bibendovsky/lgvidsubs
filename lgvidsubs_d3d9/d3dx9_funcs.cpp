@@ -4,61 +4,61 @@
 namespace {
 
 
-    const char* const D3DX_CREATE_FONT_FUNC_NAME =
+const char* const D3DX_CREATE_FONT_FUNC_NAME =
 #ifdef _UNICODE
-        "D3DXCreateFontW"
+    "D3DXCreateFontW"
 #else
-        "D3DXCreateFontA"
+    "D3DXCreateFontA"
 #endif // _UNICODE
-        ;
+    ;
 
-    const char* const D3DX_CREATE_SPRITE_FUNC_NAME = "D3DXCreateSprite";
+const char* const D3DX_CREATE_SPRITE_FUNC_NAME = "D3DXCreateSprite";
 
 
 } // namespace
 
 
 D3dX9Funcs::D3dX9Funcs (
-    LPCTSTR libraryName) :
-        mIsInitialized (false),
-        mLibrary (::LoadLibrary (libraryName)),
-        mCreateFont (0),
-        mCreateSprite (0)
+    LPCTSTR library_name) :
+        is_initialized_ (false),
+        library_ (::LoadLibrary (library_name)),
+        create_font_ (0),
+        create_sprite_ (0)
 {
-    if (mLibrary == 0)
+    if (library_ == 0)
         return;
 
-    mCreateFont = reinterpret_cast<FP_D3DXCREATEFONT> (
-        ::GetProcAddress (mLibrary, D3DX_CREATE_FONT_FUNC_NAME));
+    create_font_ = reinterpret_cast<FP_D3DXCREATEFONT> (
+        ::GetProcAddress (library_, D3DX_CREATE_FONT_FUNC_NAME));
 
-    mCreateSprite = reinterpret_cast<FP_D3DXCREATESPRITE> (
-        ::GetProcAddress (mLibrary, D3DX_CREATE_SPRITE_FUNC_NAME));
+    create_sprite_ = reinterpret_cast<FP_D3DXCREATESPRITE> (
+        ::GetProcAddress (library_, D3DX_CREATE_SPRITE_FUNC_NAME));
 
-    if ((mCreateFont != 0) &&
-        (mCreateSprite != 0))
+    if ((create_font_ != 0) &&
+        (create_sprite_ != 0))
     {
-        mIsInitialized = true;
+        is_initialized_ = true;
     } else {
-        mCreateFont = 0;
-        mCreateSprite = 0;
+        create_font_ = 0;
+        create_sprite_ = 0;
 
-        ::FreeLibrary (mLibrary);
-        mLibrary = 0;
+        ::FreeLibrary (library_);
+        library_ = 0;
     }
 }
 
 D3dX9Funcs::~D3dX9Funcs ()
 {
-    if (mLibrary != 0)
-        ::FreeLibrary (mLibrary);
+    if (library_ != 0)
+        ::FreeLibrary (library_);
 }
 
-bool D3dX9Funcs::isInitialized () const
+bool D3dX9Funcs::is_initialized () const
 {
-    return mIsInitialized;
+    return is_initialized_;
 }
 
-HRESULT WINAPI D3dX9Funcs::createFont (
+HRESULT WINAPI D3dX9Funcs::create_font (
     LPDIRECT3DDEVICE9 pDevice,
     INT Height,
     UINT Width,
@@ -72,27 +72,27 @@ HRESULT WINAPI D3dX9Funcs::createFont (
     LPCTSTR pFacename,
     LPD3DXFONT* ppFont) const
 {
-    if ((!mIsInitialized) || (ppFont == 0)) {
+    if ((!is_initialized_) || (ppFont == 0)) {
         if (ppFont != 0)
             *ppFont = 0;
 
         return D3DERR_INVALIDCALL;
     }
 
-    return mCreateFont (pDevice, Height, Width, Weight, MipLevels, Italic,
+    return create_font_ (pDevice, Height, Width, Weight, MipLevels, Italic,
         CharSet, OutputPrecision, Quality, PitchAndFamily, pFacename, ppFont);
 }
 
-HRESULT WINAPI D3dX9Funcs::createSprite (
+HRESULT WINAPI D3dX9Funcs::create_sprite (
     LPDIRECT3DDEVICE9 pDevice,
     LPD3DXSPRITE* ppSprite) const
 {
-    if ((!mIsInitialized) || (ppSprite == 0)) {
+    if ((!is_initialized_) || (ppSprite == 0)) {
         if (ppSprite != 0)
             *ppSprite = 0;
 
         return D3DERR_INVALIDCALL;
     }
 
-    return mCreateSprite (pDevice, ppSprite);
+    return create_sprite_ (pDevice, ppSprite);
 }

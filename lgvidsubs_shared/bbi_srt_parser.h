@@ -15,27 +15,22 @@
 namespace bbi {
 
 
-    class SrtParser {
-    public:
-        static SubtitleList parse (
-            std::istream& stream);
+class SrtParser {
+public:
+    static SubtitleList parse (std::istream& stream);
 
-    private:
-        SrtParser ();
+private:
+    SrtParser ();
 
-        SrtParser (
-            const SrtParser& that);
+    SrtParser (const SrtParser& that);
 
-        ~SrtParser ();
+    ~SrtParser ();
 
-        SrtParser& operator = (
-            const SrtParser& that);
+    SrtParser& operator = (const SrtParser& that);
 
-        // Reads a one line from a stream.
-        static bool readLine (
-            std::istream& stream,
-            WString& line);
-    }; // class SrtParser
+    // Reads a one line from a stream.
+    static bool read_line (std::istream& stream, WString& line);
+}; // class SrtParser
 
 
 } // namespace bbi

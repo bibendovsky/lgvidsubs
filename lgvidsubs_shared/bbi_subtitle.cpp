@@ -4,18 +4,12 @@
 namespace bbi {
 
 
-    Subtitle::Subtitle () :
-        timeBegin (0),
-        timeEnd (0),
-        lines ()
+    Subtitle::Subtitle () : time_begin (0), time_end (0), lines ()
     {
     }
 
-    Subtitle::Subtitle (
-        const Subtitle& that) :
-        timeBegin (that.timeBegin),
-        timeEnd (that.timeEnd),
-        lines (that.lines)
+    Subtitle::Subtitle (const Subtitle& that) : time_begin (that.time_begin),
+        time_end (that.time_end), lines (that.lines)
     {
     }
 
@@ -23,12 +17,11 @@ namespace bbi {
     {
     }
 
-    Subtitle& Subtitle::operator = (
-        const Subtitle& that)
+    Subtitle& Subtitle::operator = (const Subtitle& that)
     {
         if (&that != this) {
-            timeBegin = that.timeBegin;
-            timeEnd = that.timeEnd;
+            time_begin = that.time_begin;
+            time_end = that.time_end;
             lines = that.lines;
         }
 
@@ -37,8 +30,8 @@ namespace bbi {
 
     void Subtitle::clear ()
     {
-        timeBegin = 0;
-        timeEnd = 0;
+        time_begin = 0;
+        time_end = 0;
         lines.clear ();
     }
 

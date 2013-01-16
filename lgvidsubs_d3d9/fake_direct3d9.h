@@ -5,13 +5,12 @@
 #include "d3dx9_funcs.h"
 
 
-class FakeDirect3d9 :
-    public IDirect3D9 {
+class FakeDirect3d9 : public IDirect3D9 {
 public:
     FakeDirect3d9 (
-        HMODULE realD3d9Library,
-        IDirect3D9* realD3d9,
-        LPCTSTR d3dX9LibraryName);
+        HMODULE real_d3d9_library,
+        IDirect3D9* real_d3d9,
+        LPCTSTR d3dx9_library_name);
 
     ~FakeDirect3d9 ();
 
@@ -102,15 +101,13 @@ public:
 
 
 private:
-    HMODULE mRealD3d9Module;
-    IDirect3D9* mRealD3d9;
-    D3dX9Funcs* mD3dX9Funcs;
+    HMODULE real_d3d9_module_;
+    IDirect3D9* real_d3d9_;
+    D3dX9Funcs* d3dx9_funcs_;
 
-    FakeDirect3d9 (
-        const FakeDirect3d9& that);
+    FakeDirect3d9 (const FakeDirect3d9& that);
 
-    FakeDirect3d9& operator = (
-        const FakeDirect3d9& that);
+    FakeDirect3d9& operator = (const FakeDirect3d9& that);
 }; // class FakeDirect3d9
 
 

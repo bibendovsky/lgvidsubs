@@ -10,8 +10,8 @@ class FakeDirect3dDevice9 :
     public IDirect3DDevice9 {
 public:
     FakeDirect3dDevice9 (
-        IDirect3DDevice9* realDevice,
-        D3dX9Funcs* d3dX9Funcs);
+        IDirect3DDevice9* real_device,
+        D3dX9Funcs* d3dx9_funcs);
 
     ~FakeDirect3dDevice9 ();
 
@@ -552,30 +552,28 @@ private:
         LPD3DXFONT *ppFont);
 
 
-    IDirect3DDevice9* mRealDevice;
-    bool mIsDeviceLost;
-    D3dX9Funcs* mD3dX9Funcs;
-    D3DVIEWPORT9 mViewPort;
-    ID3DXFont* mFont;
-    ID3DXSprite* mSprite;
-    int mOldSubIndex;
-    int mFontHeight;
-    int mFontWeight;
-    int mTextHeight;
-    int mSpaceAfter;
-    int mShadowOffsetX;
-    int mShadowOffsetY;
-    SIZE mLinesSizes[bbi::DllContext::MAX_LINE_COUNT];
+    IDirect3DDevice9* real_device_;
+    bool is_device_lost_;
+    D3dX9Funcs* d3dx9_funcs_;
+    D3DVIEWPORT9 view_port_;
+    ID3DXFont* font_;
+    ID3DXSprite* sprite_;
+    int old_sub_index_;
+    int font_height_;
+    int font_weight_;
+    int text_height_;
+    int space_after_;
+    int shadow_offset_x_;
+    int shadow_offset_y_;
+    SIZE lines_sizes_[bbi::DllContext::MAX_LINE_COUNT];
 
-    FakeDirect3dDevice9 (
-        const FakeDirect3dDevice9& that);
+    FakeDirect3dDevice9 (const FakeDirect3dDevice9& that);
 
-    FakeDirect3dDevice9& operator = (
-        const FakeDirect3dDevice9& that);
+    FakeDirect3dDevice9& operator = (const FakeDirect3dDevice9& that);
 
-    void drawSubtitle ();
-    void calculateProps ();
-    void measureText ();
+    void draw_subtitle ();
+    void calculate_props ();
+    void measure_text ();
 }; // class FakeDirect3dDevice9
 
 

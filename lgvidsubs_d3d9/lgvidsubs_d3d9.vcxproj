@@ -104,7 +104,6 @@
     <ClInclude Include="d3dx9_funcs.h" />
     <ClInclude Include="fake_direct3d9.h" />
     <ClInclude Include="fake_direct3d_device9.h" />
-    <ClInclude Include="global_state.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
