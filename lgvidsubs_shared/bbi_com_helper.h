@@ -23,11 +23,8 @@ public:
 
 private:
     ComHelper ();
-
     ComHelper (const ComHelper& that);
-
     ~ComHelper ();
-
     ComHelper& operator = (const ComHelper& that);
 }; // class ComHelper
 

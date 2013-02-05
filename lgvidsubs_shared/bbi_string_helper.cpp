@@ -1,8 +1,6 @@
 #include <locale>
 #include <memory>
 
-#include <windows.h>
-
 #include "bbi_string_helper.h"
 
 
@@ -10,9 +8,6 @@ namespace {
 
 
 typedef std::wstring::size_type size_type;
-
-
-#ifndef __MINGW32__
 typedef std::codecvt<wchar_t,char,mbstate_t> CodeCvt;
 
 
@@ -24,7 +19,7 @@ const CodeCvt& local8_facet ()
         std::use_facet<CodeCvt> (local8_locale);
 
     return result;
-}; // class MingwLocale
+};
 
 template<class Facet>
 bbi::WString& convert_from (bbi::WString& string, const char* src_chars,
@@ -56,31 +51,6 @@ bbi::WString& convert_from (bbi::WString& string, const char* src_chars,
 
     return string;
 }
-#else
-// MinGW's std::locale supports only "C" locale.
-// So, this is a workaround...
-bbi::WString& convert_from (bbi::WString& string, const char* src_chars,
-    size_type src_length)
-{
-    string.clear ();    
-    
-    if (src_length == 0)
-        return string;
-
-    int dst_length = ::MultiByteToWideChar (CP_ACP, 0, src_chars, src_length,
-        NULL, 0);
-    
-    if (dst_length == 0)
-        return string;
-    
-    string.resize (dst_length);
-    
-    ::MultiByteToWideChar (CP_ACP, 0, src_chars, src_length,
-        &string[0], dst_length);
-    
-    return string;
-}
-#endif // __MINGW32__
 
 
 } // namespace
@@ -97,12 +67,8 @@ WString StringHelper::to_wstring (const String& string)
 
     WString result;
 
-#ifndef __MINGW32__    
     return convert_from (result, string.c_str (), string.size (),
         local8_facet ());
-#else
-    return convert_from (result, string.c_str (), string.size ());
-#endif
 }
 
 // (static)
@@ -117,7 +83,7 @@ void StringHelper::copy_w_to_c (const WString& w_string, wchar_t* c_string,
 
     WString::traits_type::copy (c_string, w_string.c_str (), length);
 
-    c_string[length] = '\0';
+    c_string[length] = L'\0';
 }
 
 

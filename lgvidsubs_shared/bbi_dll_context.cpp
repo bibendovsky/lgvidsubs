@@ -40,29 +40,34 @@ const float DllContext::MIN_SPACE_AFTER_PIX     = 0.0F;
 const float DllContext::MAX_SPACE_AFTER_PIX     = DllContext::MAX_FONT_SIZE_PCT;
 
 
-DllContext::DllContext () : show_subs (false), sub_index (-1), line_count (0)
+DllContext::DllContext () :
+    show_subs (false),
+    sub_index (-1),
+    line_count (0)
 {
 }
 
 void DllContext::import_subtile (const bbi::Subtitle* subtitle)
 {
-    if (subtitle != 0) {
-        line_count = subtitle->lines.size ();
-
-        for (int i = 0; i < line_count; ++i) {
-            const bbi::WString& line = subtitle->lines[i];
-
-            int length = std::min (static_cast<int> (MAX_LINE_LENGTH),
-                static_cast<int> (line.size ()));
-
-            bbi::WString::traits_type::copy (
-                lines[i], line.c_str (), length);
-
-            lines[i][length] = '\0';
-            lines_lengths[i] = length;
-        }
-    } else
+    if (subtitle == NULL) {
         line_count = 0;
+        return;
+    }
+
+    line_count = subtitle->lines.size ();
+
+    for (int i = 0; i < line_count; ++i) {
+        const bbi::WString& line = subtitle->lines[i];
+
+        int length = std::min (static_cast<int> (MAX_LINE_LENGTH),
+            static_cast<int> (line.size ()));
+
+        bbi::WString::traits_type::copy (
+            lines[i], line.c_str (), length);
+
+        lines[i][length] = L'\0';
+        lines_lengths[i] = length;
+    }
 }
 
 

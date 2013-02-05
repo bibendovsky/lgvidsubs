@@ -43,7 +43,7 @@ SubtitleList SrtParser::parse (std::istream& stream)
     SubtitleList subtitles;
 
     // Subtitle's lines counter
-    int subLineCount;
+    int subline_count;
 
     for (State state = ST_SKIP_BLANK; state != ST_QUIT; ) {
         switch (state) {
@@ -116,7 +116,7 @@ SubtitleList SrtParser::parse (std::istream& stream)
 
                     subbuffer.time_begin = msecs1;
                     subbuffer.time_end = msecs2;
-                    subLineCount = 0;
+                    subline_count = 0;
 
                     state = ST_READ_TEXT;
                 } else
@@ -131,10 +131,10 @@ SubtitleList SrtParser::parse (std::istream& stream)
             // \n
 
             if ((read_line (stream, line)) && (!line.empty ())) {
-                ++subLineCount;
+                ++subline_count;
                 state = ST_PARSE_TEXT;
             } else {
-                if (subLineCount > 0) {
+                if (subline_count > 0) {
                     subtitles.push_back (subbuffer);
                     state = ST_SKIP_BLANK;
                 } else

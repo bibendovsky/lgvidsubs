@@ -20,10 +20,12 @@
 // and a tutorial by Martin Bohme (boehme@inb.uni-luebeckREMOVETHIS.de)
 
 
-// load ffmpeg as a DLL
-#ifdef _MSC_VER
-#define FFMPEG_DLL
-#endif
+// BBi
+//// load ffmpeg as a DLL
+//#ifdef _MSC_VER
+//#define FFMPEG_DLL
+//#endif
+// BBi
 
 
 #define __STDC_CONSTANT_MACROS
@@ -102,7 +104,7 @@ float read_config_float_value (const char* key_name, ILGVideoDecoderHost* host,
     if (ss_buffer.fail ())
         return default_value;
 
-    wchar_t any_non_space = '\0';
+    wchar_t any_non_space = L'\0';
     ss_buffer >> any_non_space;
 
     if (!ss_buffer.fail ())
@@ -125,7 +127,7 @@ float read_config_percents_value (const char* key_name, ILGVideoDecoderHost* hos
     if (ss_buffer.fail ())
         return default_value;
 
-    wchar_t percents = '\0';
+    wchar_t percents = L'\0';
     ss_buffer >> percents;
 
     if (ss_buffer.fail ()) {
@@ -133,7 +135,7 @@ float read_config_percents_value (const char* key_name, ILGVideoDecoderHost* hos
         return value;
     }
 
-    wchar_t any_non_space = '\0';
+    wchar_t any_non_space = L'\0';
     ss_buffer >> any_non_space;
 
     if (!ss_buffer.fail ())
@@ -360,7 +362,7 @@ namespace FFmpeg
 {
     // BBi
 	//void* (*av_malloc)(FF_INTERNAL_MEM_TYPE size);
-	void* (*av_malloc) (size_t size);
+	void* (*av_malloc) (std::size_t size);
 	// BBi
 
 	void (*av_freep)(void *ptr);
@@ -671,7 +673,7 @@ namespace FFmpeg
 		INIT_FF_CALL(avio_alloc_context);
 
 		// BBi
-		INIT_FF_CALL (av_samples_get_buffer_size);
+        INIT_FF_CALL (av_samples_get_buffer_size);
 
         INIT_FF_CALL (swr_alloc);
         INIT_FF_CALL (swr_init);
@@ -1224,12 +1226,12 @@ struct VideoState
 	unsigned int    audio_buf_index;
 	AVPacket        audio_pkt;
 	AVPacket        audio_pkt2;
-    
+
     // BBi
     //AVSampleFormat  audio_src_fmt;
     //AVAudioConvert  *reformat_ctx;
     // BBi
-    
+
 	double          audio_diff_cum; /* used for AV difference average computation */
 	double          audio_diff_avg_coef;
 	double          audio_diff_threshold;
@@ -1265,9 +1267,9 @@ struct VideoState
 	int             refresh;
 
 	// BBi
-	AVFrame* audio_frame;
+    AVFrame* audio_frame;
     AVSampleFormat audio_format;
-    int audio_channels;    
+    int audio_channels;
     int64_t audio_channel_layout;
     int audio_sample_rate;
     int audio_bps; // bytes per sample
@@ -1278,7 +1280,8 @@ struct VideoState
     int swr_sample_rate;
 
     bbi::SubtitleList subtitles;
-    HMODULE d3d9_library;    
+    HMODULE d3d9_library;
+    bbi::WString font_filename;
 	// BBi
 
 	VideoState(cLGVideoDecoder *pOuter_)
@@ -1293,12 +1296,12 @@ struct VideoState
 		audio_st(0),
 		audio_buf_size(0),
 		audio_buf_index(0),
-        
+
         // BBi
 		//audio_src_fmt(AV_SAMPLE_FMT_NONE),
 		//reformat_ctx(NULL),
         // BBi
-        
+
 		audio_diff_cum(0),
 		audio_diff_avg_coef(0),
 		audio_diff_threshold(0),
@@ -1326,9 +1329,9 @@ struct VideoState
 		skip_frames_index(0),
 		refresh(0)
 
-		// BBi
-		,
-		audio_frame (NULL),
+        // BBi
+        ,
+        audio_frame (NULL),
         audio_format (AV_SAMPLE_FMT_NONE),
         audio_channels (0),
         audio_channel_layout (0),
@@ -1340,8 +1343,9 @@ struct VideoState
         swr_channel_layout (-1),
         swr_sample_rate (-1),
         subtitles (),
-        d3d9_library (NULL)
-		// BBi
+        d3d9_library (NULL),
+        font_filename ()
+        // BBi
 	{
 		audio_buf = audio_buf1;
 
@@ -1350,9 +1354,9 @@ struct VideoState
 
 		//timer = CreateWaitableTimer(NULL, TRUE, NULL);
 
-		// BBi
-		audio_frame = FFmpeg::avcodec_alloc_frame ();
-		// BBi
+        // BBi
+        audio_frame = FFmpeg::avcodec_alloc_frame ();
+        // BBi
 	}
 
 	~VideoState()
@@ -1360,10 +1364,13 @@ struct VideoState
 		//CloseHandle(timer);
 		Close();
 
-		// BBi
-		FFmpeg::avcodec_free_frame (&audio_frame);
+        // BBi
+        FFmpeg::avcodec_free_frame (&audio_frame);
         FFmpeg::swr_free (&swr_ctx);
-		// BBi
+
+        if (!font_filename.empty ())
+            ::RemoveFontResourceW (font_filename.c_str ());
+        // BBi
 	}
 
 	void schedule_refresh(int delay)
@@ -1470,21 +1477,21 @@ struct VideoState
 		//ap->prealloced_context = 1;
 		//ap->time_base.den = 1;
 		//ap->time_base.num = 25;
-		// BBi
+        // BBi
 
 		// Open video file
 
-		// BBi
+        // BBi
 		//if(FFmpeg::OpenFile(&pFormatCtx, filename, NULL, 0, ap)!=0)
-		if (FFmpeg::OpenFile (&pFormatCtx, filename, NULL, 0) != 0)
+        if (FFmpeg::OpenFile (&pFormatCtx, filename, NULL, 0) != 0)
         // BBi
 			return FALSE; // Couldn't open file
 
 		// Retrieve stream information
 
-		// BBi
+        // BBi
 		//if(FFmpeg::av_find_stream_info(pFormatCtx)<0)
-		if (FFmpeg::avformat_find_stream_info (pFormatCtx, NULL) < 0)
+        if (FFmpeg::avformat_find_stream_info (pFormatCtx, NULL) < 0)
         // BBi
 
 			return FALSE; // Couldn't find stream information
@@ -1555,7 +1562,7 @@ struct VideoState
         sub_file_name += ".srt";
 
 
-        std::ifstream srt_stream (sub_file_name.c_str ());
+        std::ifstream srt_stream (sub_file_name);
 
         if (srt_stream.is_open ())
             subtitles = bbi::SrtParser::parse (srt_stream);
@@ -1566,11 +1573,19 @@ struct VideoState
         if (!subtitles.empty ()) {
             d3d9_library = ::LoadLibraryW (L".\\d3d9.dll");
 
-            if (d3d9_library != 0) {
+            if (d3d9_library != NULL) {
                 lgvid_context = reinterpret_cast<bbi::DllContext*> (
                     ::GetProcAddress (d3d9_library, "LgVidContext"));
 
-                if (lgvid_context != 0) {
+                if (lgvid_context != NULL) {
+                    font_filename = read_config_string (
+                        "subs_font_filename", pOuter->m_pHostIface);
+
+                    if (!font_filename.empty ()) {
+                        if (::AddFontResourceW (font_filename.c_str ()) == 0)
+                            font_filename.clear ();
+                    }
+
                     read_config_values (pOuter->m_pHostIface);
 
                     lgvid_context->show_subs = true;
@@ -2028,19 +2043,19 @@ private:
                 // BBi
 
 				} else {
-				    // BBi
+                    // BBi
 					//audio_buf = audio_buf1;
-					audio_buf = audio_frame->data[0];
-					// BBi
+                    audio_buf = audio_frame->data[0];
+                    // BBi
 				}
 
 				pts = audio_clock;
 				*pts_ptr = pts;
-                
+
                 // BBi
 				//n = 2 * dec->channels;
 				//audio_clock += (double)data_size / (double)(n * dec->sample_rate);
-                
+
                 n = audio_bps * audio_channels;
                 audio_clock += (double)data_size / (double)(n * audio_sample_rate);
                 // BBi
@@ -2262,7 +2277,8 @@ private:
     // Predicate for searching subtitle with a specified time (milliseconds).
     class SubtitlePred {
     public:
-        SubtitlePred (int time) : mTime (time)
+        SubtitlePred (int time) :
+            mTime (time)
         {
         }
 
@@ -2336,7 +2352,7 @@ private:
 			is->video_st->codec->height, data, stride);
 
         // BBi
-        if (lgvid_context != 0) {
+        if (lgvid_context != NULL) {
             // Convert to milliseconds
             int time = static_cast<int> (pts * 1000.0);
 
@@ -2521,13 +2537,13 @@ int VideoState::stream_component_open(int stream_index)
                 audio_channels);
 
             audio_sample_rate = codecCtx->sample_rate;
-            
+
             audio_bps = FFmpeg::av_get_bytes_per_sample (audio_format);
 
-			if (!pOuter->m_pHostIface->CreateAudioBuffer (audio_sample_rate,
+            if (!pOuter->m_pHostIface->CreateAudioBuffer (audio_sample_rate,
                 audio_channels, AUDIO_BUFFER_SIZE))
             {
-				break;
+                break;
             }
             // BBi
 
@@ -2696,8 +2712,8 @@ BOOL cLGVideoDecoder::Init(const char *filename)
 
     // BBi
 	//FFmpeg::avcodec_init();
-	FFmpeg::avcodec_register_all ();
-	// BBi
+    FFmpeg::avcodec_register_all ();
+    // BBi
 
 	FFmpeg::av_register_all();
 

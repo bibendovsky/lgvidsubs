@@ -1,0 +1,50 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ImportGroup Label="PropertySheets" />
+  <PropertyGroup Label="UserMacros">
+    <ff_version>1.1.1</ff_version>
+    <ff_source_dir>..\..\ffmpeg-$(ff_version)\</ff_source_dir>
+    <ff_build_dir>..\..\ffmpeg-$(ff_version)-lgvid\</ff_build_dir>
+    <gcc_version>4.7.2</gcc_version>
+    <mingw_dir>c:\mingw</mingw_dir>
+  </PropertyGroup>
+  <PropertyGroup>
+    <TargetName>lgvid</TargetName>
+  </PropertyGroup>
+  <ItemDefinitionGroup>
+    <ClCompile>
+      <AdditionalIncludeDirectories>src;..\lgvidsubs_shared;$(ff_build_dir);$(ff_source_dir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <StringPooling>true</StringPooling>
+      <PrecompiledHeaderFile>
+      </PrecompiledHeaderFile>
+      <PrecompiledHeaderOutputFile>
+      </PrecompiledHeaderOutputFile>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;_USRDLL;NOMINMAX;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <Link>
+      <AdditionalLibraryDirectories>$(mingw_dir)\lib;$(mingw_dir)\lib\gcc\mingw32\$(gcc_version);$(ff_build_dir)\libavcodec;$(ff_build_dir)\libavformat;$(ff_build_dir)\libavutil;$(ff_build_dir)\libswresample;$(ff_build_dir)\libswscale;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>libgcc.a;libmingwex.a;libavcodec.a;libavformat.a;libavutil.a;libswresample.a;libswscale.a;%(AdditionalDependencies)</AdditionalDependencies>
+      <OptimizeReferences>false</OptimizeReferences>
+      <EnableCOMDATFolding>false</EnableCOMDATFolding>
+      <SubSystem>Windows</SubSystem>
+      <ModuleDefinitionFile>lgvidsubs.def</ModuleDefinitionFile>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <BuildMacro Include="ff_version">
+      <Value>$(ff_version)</Value>
+    </BuildMacro>
+    <BuildMacro Include="ff_source_dir">
+      <Value>$(ff_source_dir)</Value>
+    </BuildMacro>
+    <BuildMacro Include="ff_build_dir">
+      <Value>$(ff_build_dir)</Value>
+    </BuildMacro>
+    <BuildMacro Include="gcc_version">
+      <Value>$(gcc_version)</Value>
+    </BuildMacro>
+    <BuildMacro Include="mingw_dir">
+      <Value>$(mingw_dir)</Value>
+    </BuildMacro>
+  </ItemGroup>
+</Project>

@@ -15,37 +15,23 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="d3dx9_funcs.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="fake_direct3d9.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="fake_direct3d_device9.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="program.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\lgvidsubs_shared\bbi_dll_context.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="lgvidsubs_d3d9.def">
+    <ClCompile Include="src\d3dx9_funcs.cpp">
       <Filter>Source Files</Filter>
-    </None>
+    </ClCompile>
+    <ClCompile Include="src\fake_direct3d_device9.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\fake_direct3d9.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\program.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="d3dx9_funcs.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="fake_direct3d9.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="fake_direct3d_device9.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\lgvidsubs_shared\bbi_dll_context.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -53,6 +39,15 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\lgvidsubs_shared\bbi_com_helper.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\d3dx9_funcs.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\fake_direct3d_device9.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\fake_direct3d9.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

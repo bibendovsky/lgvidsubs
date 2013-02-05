@@ -89,21 +89,18 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\lgvidsubs_shared\bbi_dll_context.cpp" />
-    <ClCompile Include="d3dx9_funcs.cpp" />
-    <ClCompile Include="fake_direct3d9.cpp" />
-    <ClCompile Include="fake_direct3d_device9.cpp" />
-    <ClCompile Include="program.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="lgvidsubs_d3d9.def" />
+    <ClCompile Include="src\d3dx9_funcs.cpp" />
+    <ClCompile Include="src\fake_direct3d9.cpp" />
+    <ClCompile Include="src\fake_direct3d_device9.cpp" />
+    <ClCompile Include="src\program.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\lgvidsubs_shared\bbi_com_helper.h" />
     <ClInclude Include="..\lgvidsubs_shared\bbi_dll_context.h" />
     <ClInclude Include="..\lgvidsubs_shared\bbi_types.h" />
-    <ClInclude Include="d3dx9_funcs.h" />
-    <ClInclude Include="fake_direct3d9.h" />
-    <ClInclude Include="fake_direct3d_device9.h" />
+    <ClInclude Include="src\d3dx9_funcs.h" />
+    <ClInclude Include="src\fake_direct3d9.h" />
+    <ClInclude Include="src\fake_direct3d_device9.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

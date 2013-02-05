@@ -29,6 +29,12 @@ value will be converted to pixels by the folowing expression:
 value_pixels = screen_height * value_percents / 100
 
 
+subs_font_filename <filename>
+-----------------------
+Temporarily registers specified external font.
+Default value: <empty>
+
+
 subs_font_family <name>
 -----------------------
 Font family name.
@@ -99,6 +105,7 @@ Valid range (pixels): 0 .. 64
 
 Example:
 --------
+subs_font_filename my_arial.ttf
 subs_font_family arial
 subs_font_size 8.0%
 subs_font_color 0.8 1.0 0.8 1.0
@@ -112,6 +119,16 @@ subs_space_after 4.0%
 ==========
 Change log
 ----------
+
+----------
+2013.02.05
+----------
+
+Added new configuration option - "subs_font_filename".
+Moved back to MSVC 2010 EE.
+Removed MinGW workarounds for string conversion (char -> wchar_t).
+Updated FFmpeg to version 1.1.1.
+
 
 ----------
 2013.01.11
