@@ -121,6 +121,12 @@ Change log
 ----------
 
 ----------
+2013.03.18
+----------
+
+Reverted to VC2008. Updated according new relase of New Dark Engine 1.20.
+
+----------
 2013.02.05
 ----------
 
