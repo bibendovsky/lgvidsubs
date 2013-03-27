@@ -42,7 +42,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="."
-				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USRDLL;LGVIDSUBS_EXPORTS;NOMINMAX"
+				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USRDLL;LGVIDSUBS_EXPORTS;NOMINMAX;_BIND_TO_CURRENT_VCLIBS_VERSION=1"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
@@ -61,7 +61,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				OutputFile="$(OutDir)\lgvid.dll"
-				LinkIncremental="2"
+				LinkIncremental="1"
 				ModuleDefinitionFile="lgvidsubs.def"
 				GenerateDebugInformation="true"
 				SubSystem="2"
@@ -87,6 +87,8 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
+				Description="Embedding a correct manifest..."
+				CommandLine="mt.exe -manifest &quot;lgvidsubs.manifest&quot; -outputresource:&quot;$(TargetPath)&quot;;2"
 			/>
 		</Configuration>
 		<Configuration
@@ -116,7 +118,7 @@
 				Name="VCCLCompilerTool"
 				OmitFramePointers="true"
 				AdditionalIncludeDirectories="."
-				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;LGVIDSUBS_EXPORTS;NOMINMAX"
+				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;LGVIDSUBS_EXPORTS;NOMINMAX;_BIND_TO_CURRENT_VCLIBS_VERSION=1"
 				RuntimeLibrary="2"
 				BufferSecurityCheck="false"
 				EnableFunctionLevelLinking="true"
@@ -161,6 +163,8 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
+				Description="Embedding a correct manifest..."
+				CommandLine="mt.exe -manifest &quot;lgvidsubs.manifest&quot; -outputresource:&quot;$(TargetPath)&quot;;2"
 			/>
 		</Configuration>
 	</Configurations>

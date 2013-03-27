@@ -121,6 +121,13 @@ Change log
 ----------
 
 ----------
+2013.03.27
+----------
+
+Changed bindings of binaries to Visual C++ 2008 Redistributable 9.0.30729.1,
+as did in New Dark Engine 1.21.
+
+----------
 2013.03.18
 ----------
 
