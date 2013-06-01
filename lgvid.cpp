@@ -45,224 +45,9 @@ extern "C"
 
 #include "lgviddecoder.h"
 
-#include <algorithm>
-#include <fstream>
-#include <sstream>
-
-#include "bbi_dll_context.h"
-#include "bbi_math.h"
-#include "bbi_srt_parser.h"
-#include "bbi_string_helper.h"
-
-
-bbi::DllContext* lgvid_context = NULL;
-
-
-namespace {
-
-const bbi::WString DEFAULT_FONT_FAMILY = L"Arial";
-
-const int VALUE_BUFFER_SIZE = 128;
-const int VALUE_BUFFER_LENGTH = VALUE_BUFFER_SIZE - 1;
-char value_buffer[VALUE_BUFFER_SIZE];
-
-const bbi::WString BLANK_WSTRING = L"";
-
-std::wistringstream ss_buffer;
-
-
-bbi::WString read_config_string (const char* key_name, ILGVideoDecoderHost* host,
-    const bbi::WString& default_value = BLANK_WSTRING)
-{
-    if (!host->GetConfigValue (key_name, value_buffer, VALUE_BUFFER_LENGTH))
-        return default_value;
-
-    value_buffer[VALUE_BUFFER_LENGTH] = '\0';
-
-    return bbi::StringHelper::to_wstring (value_buffer);
-}
-
-float read_config_float_value (const char* key_name, ILGVideoDecoderHost* host,
-    float default_value)
-{
-    ss_buffer.clear ();
-    ss_buffer.str (read_config_string (key_name, host));
-
-    float value;
-    ss_buffer >> value;
-
-    if (ss_buffer.fail ())
-        return default_value;
-
-    wchar_t any_non_space = L'\0';
-    ss_buffer >> any_non_space;
-
-    if (!ss_buffer.fail ())
-        return default_value;
-
-    return value;
-}
-
-float read_config_percents_value (const char* key_name, ILGVideoDecoderHost* host,
-    float default_value, bool default_is_percents, bool& is_percents)
-{
-    is_percents = default_is_percents;
-
-    ss_buffer.clear ();
-    ss_buffer.str (read_config_string (key_name, host));
-
-    float value;
-    ss_buffer >> value;
-
-    if (ss_buffer.fail ())
-        return default_value;
-
-    wchar_t percents = L'\0';
-    ss_buffer >> percents;
-
-    if (ss_buffer.fail ()) {
-        default_is_percents = false;
-        return value;
-    }
-
-    wchar_t any_non_space = L'\0';
-    ss_buffer >> any_non_space;
-
-    if (!ss_buffer.fail ())
-        return default_value;
-
-    return value;
-}
-
-unsigned read_color_value (const char* key_name, ILGVideoDecoderHost* host,
-    unsigned default_value)
-{
-    ss_buffer.clear ();
-    ss_buffer.str (read_config_string (key_name, host));
-
-    float color_buffer[4];
-
-    ss_buffer >> color_buffer[0] >> color_buffer[1] >>
-        color_buffer[2] >> color_buffer[3];
-
-    if (ss_buffer.fail ())
-        return default_value;
-
-    unsigned r = static_cast<unsigned> (
-        255.0F * bbi::Math::clamp (color_buffer[0], 0.0F, 1.0F));
-    unsigned g = static_cast<unsigned> (
-        255.0F * bbi::Math::clamp (color_buffer[1], 0.0F, 1.0F));
-    unsigned b = static_cast<unsigned> (
-        255.0F * bbi::Math::clamp (color_buffer[2], 0.0F, 1.0F));
-    unsigned a = static_cast<unsigned> (
-        255.0F * bbi::Math::clamp (color_buffer[3], 0.0F, 1.0F));
-
-    return
-        ((a & 0xFF) << 24) |
-        ((r & 0xFF) << 16) |
-        ((g & 0xFF) <<  8) |
-        ((b & 0xFF) <<  0);
-}
-
-void read_config_values (ILGVideoDecoderHost* host)
-{
-    //
-    bbi::WString font_family = read_config_string ("subs_font_family", host);
-    if (font_family.empty ())
-        font_family = L"Arial";
-    bbi::StringHelper::copy_w_to_c (
-        font_family, lgvid_context->font_family, bbi::DllContext::MAX_LINE_LENGTH);
-
-
-    //
-    lgvid_context->font_size = read_config_percents_value (
-        "subs_font_size", host, bbi::DllContext::DEFAULT_FONT_SIZE_PCT,
-        true, lgvid_context->font_size_in_percents);
-
-    if (lgvid_context->font_size_in_percents) {
-        lgvid_context->font_size = bbi::Math::clamp (
-            lgvid_context->font_size,
-            bbi::DllContext::MIN_FONT_SIZE_PCT,
-            bbi::DllContext::MAX_FONT_SIZE_PCT);
-    } else {
-        lgvid_context->font_size = bbi::Math::clamp (
-            lgvid_context->font_size,
-            bbi::DllContext::MIN_FONT_SIZE_PIX,
-            bbi::DllContext::MAX_FONT_SIZE_PIX);
-    }
-
-    //
-    lgvid_context->font_weight = read_config_float_value (
-        "subs_font_weight", host, bbi::DllContext::DEFAULT_FONT_WEIGHT);
-
-    lgvid_context->font_weight = bbi::Math::clamp (
-        lgvid_context->font_weight,
-        bbi::DllContext::MIN_FONT_WEIGHT,
-        bbi::DllContext::MAX_FONT_WEIGHT);
-
-    //
-    lgvid_context->font_color = read_color_value (
-        "subs_font_color", host, bbi::DllContext::DEFAULT_FONT_COLOR);
-
-    //
-    lgvid_context->shadow_color = read_color_value (
-        "subs_shadow_color", host, bbi::DllContext::DEFAULT_SHADOW_COLOR);
-
-    //
-    lgvid_context->shadow_offset_x = read_config_percents_value (
-        "subs_shadow_offset_x", host, bbi::DllContext::DEFAULT_SHADOW_OFFSET_PCT,
-        true, lgvid_context->shadow_offset_x_in_percents);
-
-    if (lgvid_context->shadow_offset_x_in_percents) {
-        lgvid_context->shadow_offset_x = bbi::Math::clamp (
-            lgvid_context->shadow_offset_x,
-            bbi::DllContext::MIN_SHADOW_OFFSET_PCT,
-            bbi::DllContext::MAX_SHADOW_OFFSET_PCT);
-    } else {
-        lgvid_context->shadow_offset_x = bbi::Math::clamp (
-            lgvid_context->shadow_offset_x,
-            bbi::DllContext::MIN_SHADOW_OFFSET_PIX,
-            bbi::DllContext::MAX_SHADOW_OFFSET_PIX);
-    }
-
-    //
-    lgvid_context->shadow_offset_y = read_config_percents_value (
-        "subs_shadow_offset_y", host, bbi::DllContext::DEFAULT_SHADOW_OFFSET_PCT,
-        true, lgvid_context->shadow_offset_y_in_percents);
-
-    if (lgvid_context->shadow_offset_y_in_percents) {
-        lgvid_context->shadow_offset_y = bbi::Math::clamp (
-            lgvid_context->shadow_offset_y,
-            bbi::DllContext::MIN_SHADOW_OFFSET_PCT,
-            bbi::DllContext::MAX_SHADOW_OFFSET_PCT);
-    } else {
-        lgvid_context->shadow_offset_y = bbi::Math::clamp (
-            lgvid_context->shadow_offset_y,
-            bbi::DllContext::MIN_SHADOW_OFFSET_PIX,
-            bbi::DllContext::MAX_SHADOW_OFFSET_PIX);
-    }
-
-    //
-    lgvid_context->space_after = read_config_percents_value (
-        "subs_space_after", host, bbi::DllContext::DEFAULT_SPACE_AFTER_PCT,
-        true, lgvid_context->space_after_in_percents);
-
-    if (lgvid_context->space_after_in_percents) {
-        lgvid_context->space_after = bbi::Math::clamp (
-            lgvid_context->space_after,
-            bbi::DllContext::MIN_SPACE_AFTER_PCT,
-            bbi::DllContext::MAX_SPACE_AFTER_PCT);
-    } else {
-        lgvid_context->space_after = bbi::Math::clamp (
-            lgvid_context->space_after,
-            bbi::DllContext::MIN_SPACE_AFTER_PIX,
-            bbi::DllContext::MAX_SPACE_AFTER_PIX);
-    }
-}
-
-
-} // namespace
-//BBi
+// BBi
+#include "lgvs_lgvid_subs.h"
+// BBi
 
 
 #ifdef _DEBUG
@@ -1101,9 +886,7 @@ struct VideoState
 	int             refresh;
 
 	// BBi
-    bbi::SubtitleList subtitles;
-    HMODULE d3d9_library;
-    bbi::WString font_filename;
+    lgvs::LgVidSubs subs;
 	// BBi
 
 	VideoState(cLGVideoDecoder *pOuter_)
@@ -1149,9 +932,7 @@ struct VideoState
 
         // BBi
         ,
-        subtitles (),
-        d3d9_library (NULL),
-        font_filename ()
+        subs ()
         // BBi
 	{
 		audio_buf = audio_buf1;
@@ -1166,11 +947,6 @@ struct VideoState
 	{
 		//CloseHandle(timer);
 		Close();
-
-        // BBi
-        if (!font_filename.empty ())
-            ::RemoveFontResourceW (font_filename.c_str ());
-        // BBi
 	}
 
 	void schedule_refresh(int delay)
@@ -1338,49 +1114,9 @@ struct VideoState
 		for(int i = 0; i < VIDEO_PICTURE_QUEUE_SIZE; ++i)
 			pictq[i].bmp = pOuter->m_pHostIface->CreateImageBuffer();
 
-        
-        //BBi
-        std::string sub_file_name = filename;
-        std::string::size_type dotPos = sub_file_name.rfind ('.');
-        if (dotPos != std::string::npos)
-            sub_file_name.erase (dotPos, sub_file_name.size () - dotPos);
-        sub_file_name += ".srt";
-
-
-        std::ifstream srt_stream (sub_file_name.c_str ());
-
-        if (srt_stream.is_open ())
-            subtitles = bbi::SrtParser::parse (srt_stream);
-        else
-            subtitles.clear ();
-
-
-        if (!subtitles.empty ()) {
-            d3d9_library = ::LoadLibraryW (L".\\d3d9.dll");
-
-            if (d3d9_library != NULL) {
-                lgvid_context = reinterpret_cast<bbi::DllContext*> (
-                    ::GetProcAddress (d3d9_library, "LgVidContext"));
-
-                if (lgvid_context != NULL) {
-                    font_filename = read_config_string (
-                        "subs_font_filename", pOuter->m_pHostIface);
-
-                    if (!font_filename.empty ()) {
-                        if (::AddFontResourceW (font_filename.c_str ()) == 0)
-                            font_filename.clear ();
-                    }
-
-                    read_config_values (pOuter->m_pHostIface);
-
-                    lgvid_context->show_subs = true;
-                    lgvid_context->line_count = 0;
-                    lgvid_context->sub_index = 0;
-                }
-            } else
-                Warning (("%s\n", "Failed to load a Direct3D wrapper (.\\d3d9.dll)."));
-        }
-        //BBi
+        // BBi
+        subs.initialize (pOuter->m_pHostIface, filename);
+        // BBi
 
 		return TRUE;
 	}
@@ -1421,16 +1157,6 @@ struct VideoState
 		
 		for(int i = 0; i < VIDEO_PICTURE_QUEUE_SIZE; ++i)
 			pictq[i].bmp = NULL;
-
-        // BBi
-        if (lgvid_context != NULL)
-            lgvid_context->show_subs = false;
-
-        if (d3d9_library != NULL) {
-            ::FreeLibrary (d3d9_library);
-            d3d9_library = NULL;
-        }
-        // BBi
 	}
 
 	BOOL Play();
@@ -1496,7 +1222,15 @@ retry:
 
 				// show the picture!
 
+                // BBi
+                if (!subs.has_subtitles ()) {
+                // BBi
+
 				pOuter->m_pHostIface->BeginVideoFrame(pictq[pictq_rindex].bmp);
+
+                // BBi
+                }
+                // BBi
 
 				// update queue for next picture!
 				if(++pictq_rindex == VIDEO_PICTURE_QUEUE_SIZE) {
@@ -1508,7 +1242,16 @@ retry:
 				SDL_CondSignal(pictq_cond);
 				pictq_mutex.Release();
 
+                // BBi
+                if (!subs.has_subtitles ()) {
+                // BBi
+
 				pOuter->m_pHostIface->EndVideoFrame();
+
+                // BBi
+                } else
+                    subs.refresh_video = true;
+                // BBi
 			}
 		} else {
 			schedule_refresh(100);
@@ -1950,7 +1693,7 @@ protected:
 
 		return 0;
 	}
-private:
+private:	
 	double synchronize_video(AVFrame *src_frame, double pts)
 	{
 		double frame_delay;
@@ -2008,40 +1751,6 @@ private:
 		FFmpeg::sws_scale(is->img_convert_ctx, pFrame->data,
 			pFrame->linesize, 0,
 			is->video_st->codec->height, data, stride);
-
-        // BBi
-        if (lgvid_context != NULL) {
-            // Predicate to search subtitle within a specified period (ms).
-            class SubtitlePred {
-            public:
-                SubtitlePred (int time) :
-                    mTime (time)
-                {
-                }
-
-                bool operator () (const bbi::Subtitle& subtitle)
-                {
-                    return (mTime >= subtitle.time_begin) &&
-                        (mTime <= subtitle.time_end);
-                }
-
-            private:
-                int mTime;
-            }; // class SubtitlePred
-
-
-            int time = static_cast<int> (pts * 1000.0);
-
-            bbi::SubtitleList::const_iterator it = std::find_if (
-                is->subtitles.begin (), is->subtitles.end (), SubtitlePred (time));
-
-            if (it != is->subtitles.end ()) {
-                ++lgvid_context->sub_index;
-                lgvid_context->import_subtile (&(*it));
-            } else
-                lgvid_context->import_subtile (0);
-        }
-        // BBi
 
 		is->pOuter->m_pHostIface->UnlockBuffer(vp->bmp);
 
@@ -2294,6 +2003,13 @@ STDMETHODIMP_(BOOL) cLGVideoDecoder::IsVideoFrameAvailable()
 		return TRUE;
 	}
 
+    // BBi
+    if (is->subs.has_subtitles ()) {
+        if (is->audio_finished == 0 || is->video_finished == 0)
+            return TRUE;
+    }
+    // BBi
+
 	return FALSE;
 }
 
@@ -2304,6 +2020,25 @@ STDMETHODIMP_(void) cLGVideoDecoder::RequestVideoFrame()
 		is->video_refresh_timer();
 		is->refresh = 0;
 	}
+
+    // BBi
+    if (is != NULL && is->subs.has_subtitles ()) {
+        if (is->audio_finished == 0 || is->video_finished == 0) {
+            double pts = is->get_master_clock ();
+
+            if (is->subs.check_subtitle (pts))
+                is->subs.refresh_video = true;
+        }
+
+        if (is->subs.refresh_video) {
+            is->subs.refresh_video = false;
+
+            m_pHostIface->BeginVideoFrame (
+                is->pictq[is->pictq_rindex].bmp);
+            m_pHostIface->EndVideoFrame ();
+        }
+    }
+    // BBi
 }
 
 STDMETHODIMP_(void) cLGVideoDecoder::RequestAudio(unsigned int len)

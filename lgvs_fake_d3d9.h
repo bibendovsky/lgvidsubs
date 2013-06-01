@@ -1,18 +1,34 @@
-#ifndef FAKE_DIRECT3D9_H
-#define FAKE_DIRECT3D9_H
+/*
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library.
+ */
 
 
-#include "d3dx9_funcs.h"
+#ifndef LGVS_FAKE_D3D9_H
+#define LGVS_FAKE_D3D9_H
 
 
-class FakeDirect3d9 : public IDirect3D9 {
+#include "lgvs_d3dx9_funcs.h"
+
+
+class FakeD3d9 : public IDirect3D9 {
 public:
-    FakeDirect3d9 (
+    FakeD3d9 (
         HMODULE real_d3d9_library,
         IDirect3D9* real_d3d9,
-        LPCTSTR d3dx9_library_name);
+        LPCWSTR d3dx9_library_name);
 
-    ~FakeDirect3d9 ();
+    ~FakeD3d9 ();
 
 
     HRESULT STDMETHODCALLTYPE QueryInterface (
@@ -103,12 +119,12 @@ public:
 private:
     HMODULE real_d3d9_module_;
     IDirect3D9* real_d3d9_;
-    D3dX9Funcs* d3dx9_funcs_;
+    D3dx9Funcs* d3dx9_funcs_;
 
-    FakeDirect3d9 (const FakeDirect3d9& that);
+    FakeD3d9 (const FakeD3d9& that);
 
-    FakeDirect3d9& operator = (const FakeDirect3d9& that);
-}; // class FakeDirect3d9
+    FakeD3d9& operator = (const FakeD3d9& that);
+}; // class FakeD3d9
 
 
-#endif // FAKE_DIRECT3D9_H
+#endif // LGVS_FAKE_D3D9_H

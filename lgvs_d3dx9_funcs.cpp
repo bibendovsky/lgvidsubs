@@ -1,24 +1,23 @@
-#include "d3dx9_funcs.h"
+/*
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library.
+ */
 
 
-namespace {
+#include "lgvs_d3dx9_funcs.h"
 
 
-const char* const D3DX_CREATE_FONT_FUNC_NAME =
-#ifdef _UNICODE
-    "D3DXCreateFontW"
-#else
-    "D3DXCreateFontA"
-#endif // _UNICODE
-    ;
-
-const char* const D3DX_CREATE_SPRITE_FUNC_NAME = "D3DXCreateSprite";
-
-
-} // namespace
-
-
-D3dX9Funcs::D3dX9Funcs (LPCTSTR library_name) :
+D3dx9Funcs::D3dx9Funcs (LPCWSTR library_name) :
     is_initialized_ (false),
     library_ (::LoadLibrary (library_name)),
     create_font_ (NULL),
@@ -28,13 +27,13 @@ D3dX9Funcs::D3dX9Funcs (LPCTSTR library_name) :
         return;
 
     create_font_ = reinterpret_cast<FP_D3DXCREATEFONT> (
-        ::GetProcAddress (library_, D3DX_CREATE_FONT_FUNC_NAME));
+        ::GetProcAddress (library_, "D3DXCreateFontW"));
 
     create_sprite_ = reinterpret_cast<FP_D3DXCREATESPRITE> (
-        ::GetProcAddress (library_, D3DX_CREATE_SPRITE_FUNC_NAME));
+        ::GetProcAddress (library_, "D3DXCreateSprite"));
 
-    if ((create_font_ != NULL) &&
-        (create_sprite_ != NULL))
+    if (create_font_ != NULL &&
+        create_sprite_ != NULL)
     {
         is_initialized_ = true;
     } else {
@@ -46,18 +45,18 @@ D3dX9Funcs::D3dX9Funcs (LPCTSTR library_name) :
     }
 }
 
-D3dX9Funcs::~D3dX9Funcs ()
+D3dx9Funcs::~D3dx9Funcs ()
 {
     if (library_ != NULL)
         ::FreeLibrary (library_);
 }
 
-bool D3dX9Funcs::is_initialized () const
+bool D3dx9Funcs::is_initialized () const
 {
     return is_initialized_;
 }
 
-HRESULT WINAPI D3dX9Funcs::create_font (
+HRESULT WINAPI D3dx9Funcs::create_font (
     LPDIRECT3DDEVICE9 pDevice,
     INT Height,
     UINT Width,
@@ -68,10 +67,10 @@ HRESULT WINAPI D3dX9Funcs::create_font (
     DWORD OutputPrecision,
     DWORD Quality,
     DWORD PitchAndFamily,
-    LPCTSTR pFacename,
+    LPCWSTR pFacename,
     LPD3DXFONT* ppFont) const
 {
-    if ((!is_initialized_) || (ppFont == NULL)) {
+    if ((!is_initialized_) || ppFont == NULL) {
         if (ppFont != NULL)
             *ppFont = NULL;
 
@@ -82,11 +81,11 @@ HRESULT WINAPI D3dX9Funcs::create_font (
         CharSet, OutputPrecision, Quality, PitchAndFamily, pFacename, ppFont);
 }
 
-HRESULT WINAPI D3dX9Funcs::create_sprite (
+HRESULT WINAPI D3dx9Funcs::create_sprite (
     LPDIRECT3DDEVICE9 pDevice,
     LPD3DXSPRITE* ppSprite) const
 {
-    if ((!is_initialized_) || (ppSprite == NULL)) {
+    if ((!is_initialized_) || ppSprite == NULL) {
         if (ppSprite != NULL)
             *ppSprite = NULL;
 

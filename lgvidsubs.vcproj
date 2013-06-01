@@ -18,8 +18,8 @@
 	<Configurations>
 		<Configuration
 			Name="Debug|Win32"
-			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
-			IntermediateDirectory="$(ConfigurationName)\$(ProjectName)"
+			OutputDirectory="$(SolutionDir)$(ConfigurationName)\"
+			IntermediateDirectory="$(ConfigurationName)\$(ProjectName)\"
 			ConfigurationType="2"
 			CharacterSet="0"
 			>
@@ -45,7 +45,7 @@
 				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USRDLL;LGVIDSUBS_EXPORTS;NOMINMAX;_BIND_TO_CURRENT_VCLIBS_VERSION=1"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
-				RuntimeLibrary="3"
+				RuntimeLibrary="1"
 				WarningLevel="3"
 				DebugInformationFormat="3"
 			/>
@@ -88,13 +88,14 @@
 			<Tool
 				Name="VCPostBuildEventTool"
 				Description="Embedding a correct manifest..."
-				CommandLine="mt.exe -manifest &quot;lgvidsubs.manifest&quot; -outputresource:&quot;$(TargetPath)&quot;;2"
+				CommandLine="mt.exe -manifest &quot;lgvidsubs.manifest&quot; &quot;-outputresource:$(TargetPath);2&quot;"
+				ExcludedFromBuild="true"
 			/>
 		</Configuration>
 		<Configuration
 			Name="Release|Win32"
-			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
-			IntermediateDirectory="$(ConfigurationName)\$(ProjectName)"
+			OutputDirectory="$(SolutionDir)$(ConfigurationName)\"
+			IntermediateDirectory="$(ConfigurationName)\$(ProjectName)\"
 			ConfigurationType="2"
 			CharacterSet="0"
 			WholeProgramOptimization="0"
@@ -119,7 +120,7 @@
 				OmitFramePointers="true"
 				AdditionalIncludeDirectories="."
 				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;LGVIDSUBS_EXPORTS;NOMINMAX;_BIND_TO_CURRENT_VCLIBS_VERSION=1"
-				RuntimeLibrary="2"
+				RuntimeLibrary="0"
 				BufferSecurityCheck="false"
 				EnableFunctionLevelLinking="true"
 			/>
@@ -164,7 +165,8 @@
 			<Tool
 				Name="VCPostBuildEventTool"
 				Description="Embedding a correct manifest..."
-				CommandLine="mt.exe -manifest &quot;lgvidsubs.manifest&quot; -outputresource:&quot;$(TargetPath)&quot;;2"
+				CommandLine="mt.exe -manifest &quot;lgvidsubs.manifest&quot; &quot;-outputresource:$(TargetPath);2&quot;"
+				ExcludedFromBuild="true"
 			/>
 		</Configuration>
 	</Configurations>
@@ -177,23 +179,27 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
-				RelativePath=".\bbi_dll_context.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\bbi_srt_parser.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\bbi_string_helper.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\bbi_subtitle.cpp"
-				>
-			</File>
-			<File
 				RelativePath=".\lgvid.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\lgvs_dll_context.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\lgvs_lgvid_subs.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\lgvs_srt_parser.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\lgvs_string_helper.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\lgvs_subtitle.cpp"
 				>
 			</File>
 		</Filter>
@@ -203,39 +209,43 @@
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
 			<File
-				RelativePath=".\bbi_com_helper.h"
-				>
-			</File>
-			<File
-				RelativePath=".\bbi_dll_context.h"
-				>
-			</File>
-			<File
-				RelativePath=".\bbi_math.h"
-				>
-			</File>
-			<File
-				RelativePath=".\bbi_srt_parser.h"
-				>
-			</File>
-			<File
-				RelativePath=".\bbi_string_helper.h"
-				>
-			</File>
-			<File
-				RelativePath=".\bbi_subtitle.h"
-				>
-			</File>
-			<File
-				RelativePath=".\bbi_types.h"
-				>
-			</File>
-			<File
 				RelativePath=".\inttypes.h"
 				>
 			</File>
 			<File
 				RelativePath=".\lgviddecoder.h"
+				>
+			</File>
+			<File
+				RelativePath=".\lgvs_com_helper.h"
+				>
+			</File>
+			<File
+				RelativePath=".\lgvs_dll_context.h"
+				>
+			</File>
+			<File
+				RelativePath=".\lgvs_lgvid_subs.h"
+				>
+			</File>
+			<File
+				RelativePath=".\lgvs_math.h"
+				>
+			</File>
+			<File
+				RelativePath=".\lgvs_srt_parser.h"
+				>
+			</File>
+			<File
+				RelativePath=".\lgvs_string_helper.h"
+				>
+			</File>
+			<File
+				RelativePath=".\lgvs_subtitle.h"
+				>
+			</File>
+			<File
+				RelativePath=".\lgvs_types.h"
 				>
 			</File>
 		</Filter>

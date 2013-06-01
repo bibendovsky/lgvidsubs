@@ -1,19 +1,37 @@
-#ifndef FAKE_DIRECT3D_DEVICE9_H
-#define FAKE_DIRECT3D_DEVICE9_H
+/*
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library.
+ */
 
 
-#include "bbi_dll_context.h"
-#include "d3dx9_funcs.h"
+#ifndef LGVS_FAKE_D3D9_DEVICE_H
+#define LGVS_FAKE_D3D9_DEVICE_H
 
 
-class FakeDirect3dDevice9 :
+#include <vector>
+
+#include "lgvs_d3dx9_funcs.h"
+#include "lgvs_dll_context.h"
+
+
+class FakeD3d9Device :
     public IDirect3DDevice9 {
 public:
-    FakeDirect3dDevice9 (
+    FakeD3d9Device (
         IDirect3DDevice9* real_device,
-        D3dX9Funcs* d3dx9_funcs);
+        D3dx9Funcs* d3dx9_funcs);
 
-    ~FakeDirect3dDevice9 ();
+    ~FakeD3d9Device ();
 
 
     HRESULT STDMETHODCALLTYPE QueryInterface (
@@ -548,33 +566,32 @@ private:
         DWORD OutputPrecision,
         DWORD Quality,
         DWORD PitchAndFamily,
-        LPCTSTR pFacename,
+        LPCWSTR pFacename,
         LPD3DXFONT *ppFont);
 
 
     IDirect3DDevice9* real_device_;
     bool is_device_lost_;
-    D3dX9Funcs* d3dx9_funcs_;
+    D3dx9Funcs* d3dx9_funcs_;
     D3DVIEWPORT9 view_port_;
     ID3DXFont* font_;
     ID3DXSprite* sprite_;
-    int old_sub_index_;
     int font_height_;
     int font_weight_;
     int text_height_;
     int space_after_;
     int shadow_offset_x_;
     int shadow_offset_y_;
-    SIZE lines_sizes_[bbi::DllContext::MAX_LINE_COUNT];
+    std::vector<SIZE> lines_sizes_;
 
-    FakeDirect3dDevice9 (const FakeDirect3dDevice9& that);
+    FakeD3d9Device (const FakeD3d9Device& that);
 
-    FakeDirect3dDevice9& operator = (const FakeDirect3dDevice9& that);
+    FakeD3d9Device& operator = (const FakeD3d9Device& that);
 
     void draw_subtitle ();
     void calculate_props ();
     void measure_text ();
-}; // class FakeDirect3dDevice9
+}; // class FakeD3d9Device
 
 
-#endif // FAKE_DIRECT3D_DEVICE9_H
+#endif // LGVS_FAKE_D3D9_DEVICE_H

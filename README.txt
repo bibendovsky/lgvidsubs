@@ -1,18 +1,21 @@
 LgVidSubs
 
-Modified "lgvid" from unofficial DarkEngine patch
+Modified "lgvid" from unofficial NewDark patch
 to support external subtitles in movies.
+
+Link to source code:
+https://github.com/bibendovsky/lgvidsubs
 
 Boris I. Bendovsky
 ---------------------------------------------------
 
-Original link to unofficial patch:
+Original link to the NewDark patch:
 http://ariane4ever.free.fr/ariane4ever/viewtopic.php?f=2&t=4287&start=0&st=0&sk=t&sd=a&sid=5fb30e2ac9f6a8491c14c973b7176eb1
 
 
 System requirements
 -------------------
-Same as unofficial DarkEngine patch.
+Same as for the NewDark patch.
 
 
 Installation
@@ -119,6 +122,24 @@ subs_space_after 4.0%
 ==========
 Change log
 ----------
+
+----------
+2013.06.01
+----------
+
+Fixed detection of lines with white spaces only.
+Now using parameter "movie_path" from "install.cfg" to search subtitle files.
+Now using master clock for subtitle events.
+Subtitle entries can be unsorted in subtitle file.
+Added solution and project files for Visual Studio 2012.
+Refactored code:
+  - minimized changes in the main source file (lgvid.cpp).
+  - changed d3d wrapper's shared data to regular calls.
+  - renamed namespace / wrapper's classes, etc.
+  - renamed all source files (except original).
+  - added license plate to every file (except original).
+Added missing header file "libavutil/error.h" from modified FFMpeg library.
+Changed CRT library from dynamic to static to avoid DLL version mess.
 
 ----------
 2013.03.27

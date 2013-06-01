@@ -1,44 +1,60 @@
-#include "bbi_com_helper.h"
-#include "bbi_dll_context.h"
-#include "bbi_math.h"
-#include "fake_direct3d_device9.h"
+/*
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library.
+ */
 
 
-extern bbi::DllContext LgVidContext;
+#include "lgvs_fake_d3d9_device.h"
+
+#include "lgvs_com_helper.h"
+#include "lgvs_dll_context.h"
+#include "lgvs_lgvid_d3d9.h"
+#include "lgvs_math.h"
 
 
-FakeDirect3dDevice9::FakeDirect3dDevice9 (
+FakeD3d9Device::FakeD3d9Device (
     IDirect3DDevice9* real_device,
-    D3dX9Funcs* d3dx9_funcs) :
+    D3dx9Funcs* d3dx9_funcs) :
         real_device_ (real_device),
         is_device_lost_ (false),
         d3dx9_funcs_ (d3dx9_funcs),
         font_ (NULL),
         sprite_ (NULL),
-        old_sub_index_ (-1),
         font_height_ (0),
         font_weight_ (0),
         text_height_ (0),
         space_after_ (0),
         shadow_offset_x_ (0),
-        shadow_offset_y_ (0)
+        shadow_offset_y_ (0),
+        lines_sizes_ ()
 {
+    lines_sizes_.reserve (16);
 }
 
-FakeDirect3dDevice9::~FakeDirect3dDevice9 ()
+FakeD3d9Device::~FakeD3d9Device ()
 {
-    bbi::ComHelper::release_and_null (font_);
-    bbi::ComHelper::release_and_null (sprite_);
+    lgvs::ComHelper::release_and_null (font_);
+    lgvs::ComHelper::release_and_null (sprite_);
 }
 
 
-HRESULT STDMETHODCALLTYPE FakeDirect3dDevice9::QueryInterface (
+HRESULT STDMETHODCALLTYPE FakeD3d9Device::QueryInterface (
     REFIID riid, void** ppvObj)
 {
     if (ppvObj == NULL)
         return E_POINTER;
 
-    if ((riid == IID_IUnknown) || (riid == IID_IDirect3DDevice9)) {
+    if (riid == IID_IUnknown || riid == IID_IDirect3DDevice9) {
         *ppvObj = this;
         return D3D_OK;
     }
@@ -46,12 +62,12 @@ HRESULT STDMETHODCALLTYPE FakeDirect3dDevice9::QueryInterface (
     return real_device_->QueryInterface (riid, ppvObj);
 }
 
-ULONG STDMETHODCALLTYPE FakeDirect3dDevice9::AddRef ()
+ULONG STDMETHODCALLTYPE FakeD3d9Device::AddRef ()
 {
     return real_device_->AddRef ();
 }
 
-ULONG STDMETHODCALLTYPE FakeDirect3dDevice9::Release ()
+ULONG STDMETHODCALLTYPE FakeD3d9Device::Release ()
 {
     ULONG result = real_device_->Release ();
 
@@ -61,61 +77,61 @@ ULONG STDMETHODCALLTYPE FakeDirect3dDevice9::Release ()
     return result;
 }
 
-HRESULT STDMETHODCALLTYPE FakeDirect3dDevice9::TestCooperativeLevel ()
+HRESULT STDMETHODCALLTYPE FakeD3d9Device::TestCooperativeLevel ()
 {
     HRESULT result = real_device_->TestCooperativeLevel ();
 
     is_device_lost_ = (result != D3D_OK);
 
     if (is_device_lost_) {
-        HRESULT d3dResult = D3D_OK;
+        HRESULT d3d_result = D3D_OK;
 
         if (sprite_ != NULL)
-            d3dResult = sprite_->OnLostDevice ();
+            d3d_result = sprite_->OnLostDevice ();
 
         if (font_ != NULL)
-            d3dResult = font_->OnLostDevice ();
+            d3d_result = font_->OnLostDevice ();
     }
 
     return result;
 }
 
-UINT STDMETHODCALLTYPE FakeDirect3dDevice9::GetAvailableTextureMem ()
+UINT STDMETHODCALLTYPE FakeD3d9Device::GetAvailableTextureMem ()
 {
     return real_device_->GetAvailableTextureMem ();
 }
 
-HRESULT STDMETHODCALLTYPE FakeDirect3dDevice9::EvictManagedResources ()
+HRESULT STDMETHODCALLTYPE FakeD3d9Device::EvictManagedResources ()
 {
     return real_device_->EvictManagedResources ();
 }
 
-HRESULT STDMETHODCALLTYPE FakeDirect3dDevice9::GetDirect3D (
+HRESULT STDMETHODCALLTYPE FakeD3d9Device::GetDirect3D (
     IDirect3D9** ppD3D9)
 {
     return real_device_->GetDirect3D (ppD3D9);
 }
 
-HRESULT STDMETHODCALLTYPE FakeDirect3dDevice9::GetDeviceCaps (
+HRESULT STDMETHODCALLTYPE FakeD3d9Device::GetDeviceCaps (
     D3DCAPS9* pCaps)
 {
     return real_device_->GetDeviceCaps (pCaps);
 }
 
-HRESULT STDMETHODCALLTYPE FakeDirect3dDevice9::GetDisplayMode (
+HRESULT STDMETHODCALLTYPE FakeD3d9Device::GetDisplayMode (
     UINT iSwapChain,
     D3DDISPLAYMODE* pMode)
 {
     return real_device_->GetDisplayMode (iSwapChain, pMode);
 }
 
-HRESULT STDMETHODCALLTYPE FakeDirect3dDevice9::GetCreationParameters (
+HRESULT STDMETHODCALLTYPE FakeD3d9Device::GetCreationParameters (
     D3DDEVICE_CREATION_PARAMETERS *pParameters)
 {
     return real_device_->GetCreationParameters (pParameters);
 }
 
-HRESULT STDMETHODCALLTYPE FakeDirect3dDevice9::SetCursorProperties (
+HRESULT STDMETHODCALLTYPE FakeD3d9Device::SetCursorProperties (
     UINT XHotSpot,
     UINT YHotSpot,
     IDirect3DSurface9* pCursorBitmap)
@@ -123,7 +139,7 @@ HRESULT STDMETHODCALLTYPE FakeDirect3dDevice9::SetCursorProperties (
     return real_device_->SetCursorProperties (XHotSpot, YHotSpot, pCursorBitmap);
 }
 
-void STDMETHODCALLTYPE FakeDirect3dDevice9::SetCursorPosition (
+void STDMETHODCALLTYPE FakeD3d9Device::SetCursorPosition (
     int X,
     int Y,
     DWORD Flags)
@@ -131,53 +147,53 @@ void STDMETHODCALLTYPE FakeDirect3dDevice9::SetCursorPosition (
     return real_device_->SetCursorPosition (X, Y, Flags);
 }
 
-BOOL STDMETHODCALLTYPE FakeDirect3dDevice9::ShowCursor (
+BOOL STDMETHODCALLTYPE FakeD3d9Device::ShowCursor (
     BOOL bShow)
 {
     return real_device_->ShowCursor (bShow);
 }
 
-HRESULT STDMETHODCALLTYPE FakeDirect3dDevice9::CreateAdditionalSwapChain (
+HRESULT STDMETHODCALLTYPE FakeD3d9Device::CreateAdditionalSwapChain (
     D3DPRESENT_PARAMETERS* pPresentationParameters,
     IDirect3DSwapChain9** pSwapChain)
 {
     return real_device_->CreateAdditionalSwapChain (pPresentationParameters, pSwapChain);
 }
 
-HRESULT STDMETHODCALLTYPE FakeDirect3dDevice9::GetSwapChain (
+HRESULT STDMETHODCALLTYPE FakeD3d9Device::GetSwapChain (
     UINT iSwapChain,
     IDirect3DSwapChain9** pSwapChain)
 {
     return real_device_->GetSwapChain (iSwapChain, pSwapChain);
 }
 
-UINT STDMETHODCALLTYPE FakeDirect3dDevice9::GetNumberOfSwapChains ( )
+UINT STDMETHODCALLTYPE FakeD3d9Device::GetNumberOfSwapChains ( )
 {
     return real_device_->GetNumberOfSwapChains ();
 }
 
-HRESULT STDMETHODCALLTYPE FakeDirect3dDevice9::Reset (
+HRESULT STDMETHODCALLTYPE FakeD3d9Device::Reset (
     D3DPRESENT_PARAMETERS* pPresentationParameters)
 {
-    HRESULT d3dResult = D3D_OK;
+    HRESULT d3d_result = D3D_OK;
 
-    if (LgVidContext.show_subs) {
+    if (lgvs::g_enable_subs) {
         if (sprite_ != NULL)
-            d3dResult = sprite_->OnLostDevice ();
+            d3d_result = sprite_->OnLostDevice ();
 
         if (font_ != NULL)
-            d3dResult = font_->OnLostDevice ();
+            d3d_result = font_->OnLostDevice ();
     }
 
     HRESULT result = real_device_->Reset (pPresentationParameters);
 
-    if (LgVidContext.show_subs)
+    if (lgvs::g_enable_subs)
         measure_text ();
 
     return result;
 }
 
-HRESULT STDMETHODCALLTYPE FakeDirect3dDevice9::Present (
+HRESULT STDMETHODCALLTYPE FakeD3d9Device::Present (
     CONST RECT* pSourceRect,
     CONST RECT* pDestRect,
     HWND hDestWindowOverride,
@@ -187,7 +203,7 @@ HRESULT STDMETHODCALLTYPE FakeDirect3dDevice9::Present (
         pSourceRect, pDestRect, hDestWindowOverride, pDirtyRegion);
 }
 
-HRESULT STDMETHODCALLTYPE FakeDirect3dDevice9::GetBackBuffer (
+HRESULT STDMETHODCALLTYPE FakeD3d9Device::GetBackBuffer (
     UINT iSwapChain,
     UINT iBackBuffer,
     D3DBACKBUFFER_TYPE Type,
@@ -196,20 +212,20 @@ HRESULT STDMETHODCALLTYPE FakeDirect3dDevice9::GetBackBuffer (
     return real_device_->GetBackBuffer (iSwapChain, iBackBuffer, Type, ppBackBuffer);
 }
 
-HRESULT STDMETHODCALLTYPE FakeDirect3dDevice9::GetRasterStatus (
+HRESULT STDMETHODCALLTYPE FakeD3d9Device::GetRasterStatus (
     UINT iSwapChain,
     D3DRASTER_STATUS* pRasterStatus)
 {
     return real_device_->GetRasterStatus (iSwapChain, pRasterStatus);
 }
 
-HRESULT STDMETHODCALLTYPE FakeDirect3dDevice9::SetDialogBoxMode (
+HRESULT STDMETHODCALLTYPE FakeD3d9Device::SetDialogBoxMode (
     BOOL bEnableDialogs)
 {
     return real_device_->SetDialogBoxMode (bEnableDialogs);
 }
 
-void STDMETHODCALLTYPE FakeDirect3dDevice9::SetGammaRamp (
+void STDMETHODCALLTYPE FakeD3d9Device::SetGammaRamp (
     UINT iSwapChain,
     DWORD Flags,
     CONST D3DGAMMARAMP* pRamp)
@@ -217,14 +233,14 @@ void STDMETHODCALLTYPE FakeDirect3dDevice9::SetGammaRamp (
     return real_device_->SetGammaRamp (iSwapChain, Flags, pRamp);
 }
 
-void STDMETHODCALLTYPE FakeDirect3dDevice9::GetGammaRamp (
+void STDMETHODCALLTYPE FakeD3d9Device::GetGammaRamp (
     UINT iSwapChain,
     D3DGAMMARAMP* pRamp)
 {
     return real_device_->GetGammaRamp (iSwapChain, pRamp);
 }
 
-HRESULT STDMETHODCALLTYPE FakeDirect3dDevice9::CreateTexture (
+HRESULT STDMETHODCALLTYPE FakeD3d9Device::CreateTexture (
     UINT Width,
     UINT Height,
     UINT Levels,
@@ -238,7 +254,7 @@ HRESULT STDMETHODCALLTYPE FakeDirect3dDevice9::CreateTexture (
         Width, Height, Levels, Usage, Format, Pool, ppTexture, pSharedHandle);
 }
 
-HRESULT STDMETHODCALLTYPE FakeDirect3dDevice9::CreateVolumeTexture (
+HRESULT STDMETHODCALLTYPE FakeD3d9Device::CreateVolumeTexture (
     UINT Width,
     UINT Height,
     UINT Depth,
@@ -254,7 +270,7 @@ HRESULT STDMETHODCALLTYPE FakeDirect3dDevice9::CreateVolumeTexture (
         Pool, ppVolumeTexture, pSharedHandle);
 }
 
-HRESULT STDMETHODCALLTYPE FakeDirect3dDevice9::CreateCubeTexture (
+HRESULT STDMETHODCALLTYPE FakeD3d9Device::CreateCubeTexture (
     UINT EdgeLength,
     UINT Levels,
     DWORD Usage,
@@ -267,7 +283,7 @@ HRESULT STDMETHODCALLTYPE FakeDirect3dDevice9::CreateCubeTexture (
         EdgeLength, Levels, Usage, Format, Pool, ppCubeTexture, pSharedHandle);
 }
 
-HRESULT STDMETHODCALLTYPE FakeDirect3dDevice9::CreateVertexBuffer (
+HRESULT STDMETHODCALLTYPE FakeD3d9Device::CreateVertexBuffer (
     UINT Length,
     DWORD Usage,
     DWORD FVF,
@@ -279,7 +295,7 @@ HRESULT STDMETHODCALLTYPE FakeDirect3dDevice9::CreateVertexBuffer (
         Length, Usage, FVF, Pool, ppVertexBuffer, pSharedHandle);
 }
 
-HRESULT STDMETHODCALLTYPE FakeDirect3dDevice9::CreateIndexBuffer (
+HRESULT STDMETHODCALLTYPE FakeD3d9Device::CreateIndexBuffer (
     UINT Length,
     DWORD Usage,
     D3DFORMAT Format,
@@ -291,7 +307,7 @@ HRESULT STDMETHODCALLTYPE FakeDirect3dDevice9::CreateIndexBuffer (
         Length, Usage, Format, Pool, ppIndexBuffer, pSharedHandle);
 }
 
-HRESULT STDMETHODCALLTYPE FakeDirect3dDevice9::CreateRenderTarget (
+HRESULT STDMETHODCALLTYPE FakeD3d9Device::CreateRenderTarget (
     UINT Width,
     UINT Height,
     D3DFORMAT Format,
@@ -306,7 +322,7 @@ HRESULT STDMETHODCALLTYPE FakeDirect3dDevice9::CreateRenderTarget (
         Lockable, ppSurface, pSharedHandle);
 }
 
-HRESULT STDMETHODCALLTYPE FakeDirect3dDevice9::CreateDepthStencilSurface (
+HRESULT STDMETHODCALLTYPE FakeD3d9Device::CreateDepthStencilSurface (
     UINT Width,
     UINT Height,
     D3DFORMAT Format,
@@ -321,7 +337,7 @@ HRESULT STDMETHODCALLTYPE FakeDirect3dDevice9::CreateDepthStencilSurface (
         Discard, ppSurface, pSharedHandle);
 }
 
-HRESULT STDMETHODCALLTYPE FakeDirect3dDevice9::UpdateSurface (
+HRESULT STDMETHODCALLTYPE FakeD3d9Device::UpdateSurface (
     IDirect3DSurface9* pSourceSurface,
     CONST RECT* pSourceRect,
     IDirect3DSurface9* pDestinationSurface,
@@ -331,28 +347,28 @@ HRESULT STDMETHODCALLTYPE FakeDirect3dDevice9::UpdateSurface (
         pSourceSurface, pSourceRect, pDestinationSurface, pDestPoint);
 }
 
-HRESULT STDMETHODCALLTYPE FakeDirect3dDevice9::UpdateTexture (
+HRESULT STDMETHODCALLTYPE FakeD3d9Device::UpdateTexture (
     IDirect3DBaseTexture9* pSourceTexture,
     IDirect3DBaseTexture9* pDestinationTexture)
 {
     return real_device_->UpdateTexture (pSourceTexture, pDestinationTexture);
 }
 
-HRESULT STDMETHODCALLTYPE FakeDirect3dDevice9::GetRenderTargetData (
+HRESULT STDMETHODCALLTYPE FakeD3d9Device::GetRenderTargetData (
     IDirect3DSurface9* pRenderTarget,
     IDirect3DSurface9* pDestSurface)
 {
     return real_device_->GetRenderTargetData (pRenderTarget, pDestSurface);
 }
 
-HRESULT STDMETHODCALLTYPE FakeDirect3dDevice9::GetFrontBufferData (
+HRESULT STDMETHODCALLTYPE FakeD3d9Device::GetFrontBufferData (
     UINT iSwapChain,
     IDirect3DSurface9* pDestSurface)
 {
     return real_device_->GetFrontBufferData (iSwapChain, pDestSurface);
 }
 
-HRESULT STDMETHODCALLTYPE FakeDirect3dDevice9::StretchRect (
+HRESULT STDMETHODCALLTYPE FakeD3d9Device::StretchRect (
     IDirect3DSurface9* pSourceSurface,
     CONST RECT* pSourceRect,
     IDirect3DSurface9* pDestSurface,
@@ -363,7 +379,7 @@ HRESULT STDMETHODCALLTYPE FakeDirect3dDevice9::StretchRect (
         pSourceSurface, pSourceRect, pDestSurface, pDestRect, Filter);
 }
 
-HRESULT STDMETHODCALLTYPE FakeDirect3dDevice9::ColorFill (
+HRESULT STDMETHODCALLTYPE FakeD3d9Device::ColorFill (
     IDirect3DSurface9* pSurface,
     CONST RECT* pRect,
     D3DCOLOR color)
@@ -371,7 +387,7 @@ HRESULT STDMETHODCALLTYPE FakeDirect3dDevice9::ColorFill (
     return real_device_->ColorFill (pSurface, pRect, color);
 }
 
-HRESULT STDMETHODCALLTYPE FakeDirect3dDevice9::CreateOffscreenPlainSurface (
+HRESULT STDMETHODCALLTYPE FakeD3d9Device::CreateOffscreenPlainSurface (
     UINT Width,
     UINT Height,
     D3DFORMAT Format,
@@ -383,45 +399,45 @@ HRESULT STDMETHODCALLTYPE FakeDirect3dDevice9::CreateOffscreenPlainSurface (
         Width, Height, Format, Pool, ppSurface, pSharedHandle);
 }
 
-HRESULT STDMETHODCALLTYPE FakeDirect3dDevice9::SetRenderTarget (
+HRESULT STDMETHODCALLTYPE FakeD3d9Device::SetRenderTarget (
     DWORD RenderTargetIndex,
     IDirect3DSurface9* pRenderTarget)
 {
     return real_device_->SetRenderTarget (RenderTargetIndex, pRenderTarget);
 }
 
-HRESULT STDMETHODCALLTYPE FakeDirect3dDevice9::GetRenderTarget (
+HRESULT STDMETHODCALLTYPE FakeD3d9Device::GetRenderTarget (
     DWORD RenderTargetIndex,
     IDirect3DSurface9** ppRenderTarget)
 {
     return real_device_->GetRenderTarget (RenderTargetIndex, ppRenderTarget);
 }
 
-HRESULT STDMETHODCALLTYPE FakeDirect3dDevice9::SetDepthStencilSurface (
+HRESULT STDMETHODCALLTYPE FakeD3d9Device::SetDepthStencilSurface (
     IDirect3DSurface9* pNewZStencil)
 {
     return real_device_->SetDepthStencilSurface (pNewZStencil);
 }
 
-HRESULT STDMETHODCALLTYPE FakeDirect3dDevice9::GetDepthStencilSurface (
+HRESULT STDMETHODCALLTYPE FakeD3d9Device::GetDepthStencilSurface (
     IDirect3DSurface9** ppZStencilSurface)
 {
     return real_device_->GetDepthStencilSurface (ppZStencilSurface);
 }
 
-HRESULT STDMETHODCALLTYPE FakeDirect3dDevice9::BeginScene ()
+HRESULT STDMETHODCALLTYPE FakeD3d9Device::BeginScene ()
 {
     return real_device_->BeginScene ();
 }
 
-HRESULT STDMETHODCALLTYPE FakeDirect3dDevice9::EndScene ()
+HRESULT STDMETHODCALLTYPE FakeD3d9Device::EndScene ()
 {
     draw_subtitle ();
 
     return real_device_->EndScene ();
 }
 
-HRESULT STDMETHODCALLTYPE FakeDirect3dDevice9::Clear (
+HRESULT STDMETHODCALLTYPE FakeD3d9Device::Clear (
     DWORD Count,
     CONST D3DRECT* pRects,
     DWORD Flags,
@@ -432,152 +448,152 @@ HRESULT STDMETHODCALLTYPE FakeDirect3dDevice9::Clear (
     return real_device_->Clear (Count, pRects, Flags, Color, Z, Stencil);
 }
 
-HRESULT STDMETHODCALLTYPE FakeDirect3dDevice9::SetTransform (
+HRESULT STDMETHODCALLTYPE FakeD3d9Device::SetTransform (
     D3DTRANSFORMSTATETYPE State,
     CONST D3DMATRIX* pMatrix)
 {
     return real_device_->SetTransform (State, pMatrix);
 }
 
-HRESULT STDMETHODCALLTYPE FakeDirect3dDevice9::GetTransform (
+HRESULT STDMETHODCALLTYPE FakeD3d9Device::GetTransform (
     D3DTRANSFORMSTATETYPE State,
     D3DMATRIX* pMatrix)
 {
     return real_device_->GetTransform (State, pMatrix);
 }
 
-HRESULT STDMETHODCALLTYPE FakeDirect3dDevice9::MultiplyTransform (
+HRESULT STDMETHODCALLTYPE FakeD3d9Device::MultiplyTransform (
     D3DTRANSFORMSTATETYPE State,
     CONST D3DMATRIX* pMatrix)
 {
     return real_device_->MultiplyTransform (State, pMatrix);
 }
 
-HRESULT STDMETHODCALLTYPE FakeDirect3dDevice9::SetViewport (
+HRESULT STDMETHODCALLTYPE FakeD3d9Device::SetViewport (
     CONST D3DVIEWPORT9* pViewport)
 {
     return real_device_->SetViewport (pViewport);
 }
 
-HRESULT STDMETHODCALLTYPE FakeDirect3dDevice9::GetViewport (
+HRESULT STDMETHODCALLTYPE FakeD3d9Device::GetViewport (
     D3DVIEWPORT9* pViewport)
 {
     return real_device_->GetViewport (pViewport);
 }
 
-HRESULT STDMETHODCALLTYPE FakeDirect3dDevice9::SetMaterial (
+HRESULT STDMETHODCALLTYPE FakeD3d9Device::SetMaterial (
     CONST D3DMATERIAL9* pMaterial)
 {
     return real_device_->SetMaterial (pMaterial);
 }
 
-HRESULT STDMETHODCALLTYPE FakeDirect3dDevice9::GetMaterial (
+HRESULT STDMETHODCALLTYPE FakeD3d9Device::GetMaterial (
     D3DMATERIAL9* pMaterial)
 {
     return real_device_->GetMaterial (pMaterial);
 }
 
-HRESULT STDMETHODCALLTYPE FakeDirect3dDevice9::SetLight (
+HRESULT STDMETHODCALLTYPE FakeD3d9Device::SetLight (
     DWORD Index,
     CONST D3DLIGHT9* pLight)
 {
     return real_device_->SetLight (Index, pLight);
 }
 
-HRESULT STDMETHODCALLTYPE FakeDirect3dDevice9::GetLight (
+HRESULT STDMETHODCALLTYPE FakeD3d9Device::GetLight (
     DWORD Index,
     D3DLIGHT9* pLight)
 {
     return real_device_->GetLight (Index, pLight);
 }
 
-HRESULT STDMETHODCALLTYPE FakeDirect3dDevice9::LightEnable (
+HRESULT STDMETHODCALLTYPE FakeD3d9Device::LightEnable (
     DWORD Index,
     BOOL Enable)
 {
     return real_device_->LightEnable (Index, Enable);
 }
 
-HRESULT STDMETHODCALLTYPE FakeDirect3dDevice9::GetLightEnable (
+HRESULT STDMETHODCALLTYPE FakeD3d9Device::GetLightEnable (
     DWORD Index,
     BOOL* pEnable)
 {
     return real_device_->GetLightEnable (Index, pEnable);
 }
 
-HRESULT STDMETHODCALLTYPE FakeDirect3dDevice9::SetClipPlane (
+HRESULT STDMETHODCALLTYPE FakeD3d9Device::SetClipPlane (
     DWORD Index,
     CONST float* pPlane)
 {
     return real_device_->SetClipPlane (Index, pPlane);
 }
 
-HRESULT STDMETHODCALLTYPE FakeDirect3dDevice9::GetClipPlane (
+HRESULT STDMETHODCALLTYPE FakeD3d9Device::GetClipPlane (
     DWORD Index,
     float* pPlane)
 {
     return real_device_->GetClipPlane (Index, pPlane);
 }
 
-HRESULT STDMETHODCALLTYPE FakeDirect3dDevice9::SetRenderState (
+HRESULT STDMETHODCALLTYPE FakeD3d9Device::SetRenderState (
     D3DRENDERSTATETYPE State,
     DWORD Value)
 {
     return real_device_->SetRenderState (State, Value);
 }
 
-HRESULT STDMETHODCALLTYPE FakeDirect3dDevice9::GetRenderState (
+HRESULT STDMETHODCALLTYPE FakeD3d9Device::GetRenderState (
     D3DRENDERSTATETYPE State,
     DWORD* pValue)
 {
     return real_device_->GetRenderState (State, pValue);
 }
 
-HRESULT STDMETHODCALLTYPE FakeDirect3dDevice9::CreateStateBlock (
+HRESULT STDMETHODCALLTYPE FakeD3d9Device::CreateStateBlock (
     D3DSTATEBLOCKTYPE Type,
     IDirect3DStateBlock9** ppSB)
 {
     return real_device_->CreateStateBlock (Type, ppSB);
 }
 
-HRESULT STDMETHODCALLTYPE FakeDirect3dDevice9::BeginStateBlock ( )
+HRESULT STDMETHODCALLTYPE FakeD3d9Device::BeginStateBlock ( )
 {
     return real_device_->BeginStateBlock ();
 }
 
-HRESULT STDMETHODCALLTYPE FakeDirect3dDevice9::EndStateBlock (
+HRESULT STDMETHODCALLTYPE FakeD3d9Device::EndStateBlock (
     IDirect3DStateBlock9** ppSB)
 {
     return real_device_->EndStateBlock (ppSB);
 }
 
-HRESULT STDMETHODCALLTYPE FakeDirect3dDevice9::SetClipStatus (
+HRESULT STDMETHODCALLTYPE FakeD3d9Device::SetClipStatus (
     CONST D3DCLIPSTATUS9* pClipStatus)
 {
     return real_device_->SetClipStatus (pClipStatus);
 }
 
-HRESULT STDMETHODCALLTYPE FakeDirect3dDevice9::GetClipStatus (
+HRESULT STDMETHODCALLTYPE FakeD3d9Device::GetClipStatus (
     D3DCLIPSTATUS9* pClipStatus)
 {
     return real_device_->GetClipStatus (pClipStatus);
 }
 
-HRESULT STDMETHODCALLTYPE FakeDirect3dDevice9::GetTexture (
+HRESULT STDMETHODCALLTYPE FakeD3d9Device::GetTexture (
     DWORD Stage,
     IDirect3DBaseTexture9** ppTexture)
 {
     return real_device_->GetTexture (Stage, ppTexture);
 }
 
-HRESULT STDMETHODCALLTYPE FakeDirect3dDevice9::SetTexture (
+HRESULT STDMETHODCALLTYPE FakeD3d9Device::SetTexture (
     DWORD Stage,
     IDirect3DBaseTexture9* pTexture)
 {
     return real_device_->SetTexture (Stage, pTexture);
 }
 
-HRESULT STDMETHODCALLTYPE FakeDirect3dDevice9::GetTextureStageState (
+HRESULT STDMETHODCALLTYPE FakeD3d9Device::GetTextureStageState (
     DWORD Stage,
     D3DTEXTURESTAGESTATETYPE Type,
     DWORD* pValue)
@@ -585,7 +601,7 @@ HRESULT STDMETHODCALLTYPE FakeDirect3dDevice9::GetTextureStageState (
     return real_device_->GetTextureStageState (Stage, Type, pValue);
 }
 
-HRESULT STDMETHODCALLTYPE FakeDirect3dDevice9::SetTextureStageState (
+HRESULT STDMETHODCALLTYPE FakeD3d9Device::SetTextureStageState (
     DWORD Stage,
     D3DTEXTURESTAGESTATETYPE Type,
     DWORD Value)
@@ -593,7 +609,7 @@ HRESULT STDMETHODCALLTYPE FakeDirect3dDevice9::SetTextureStageState (
     return real_device_->SetTextureStageState (Stage, Type, Value);
 }
 
-HRESULT STDMETHODCALLTYPE FakeDirect3dDevice9::GetSamplerState (
+HRESULT STDMETHODCALLTYPE FakeD3d9Device::GetSamplerState (
     DWORD Sampler,
     D3DSAMPLERSTATETYPE Type,
     DWORD* pValue)
@@ -601,7 +617,7 @@ HRESULT STDMETHODCALLTYPE FakeDirect3dDevice9::GetSamplerState (
     return real_device_->GetSamplerState (Sampler, Type, pValue);
 }
 
-HRESULT STDMETHODCALLTYPE FakeDirect3dDevice9::SetSamplerState (
+HRESULT STDMETHODCALLTYPE FakeD3d9Device::SetSamplerState (
     DWORD Sampler,
     D3DSAMPLERSTATETYPE Type,
     DWORD Value)
@@ -609,73 +625,73 @@ HRESULT STDMETHODCALLTYPE FakeDirect3dDevice9::SetSamplerState (
     return real_device_->SetSamplerState (Sampler, Type, Value);
 }
 
-HRESULT STDMETHODCALLTYPE FakeDirect3dDevice9::ValidateDevice (
+HRESULT STDMETHODCALLTYPE FakeD3d9Device::ValidateDevice (
     DWORD* pNumPasses)
 {
     return real_device_->ValidateDevice (pNumPasses);
 }
 
-HRESULT STDMETHODCALLTYPE FakeDirect3dDevice9::SetPaletteEntries (
+HRESULT STDMETHODCALLTYPE FakeD3d9Device::SetPaletteEntries (
     UINT PaletteNumber,
     CONST PALETTEENTRY* pEntries)
 {
     return real_device_->SetPaletteEntries (PaletteNumber, pEntries);
 }
 
-HRESULT STDMETHODCALLTYPE FakeDirect3dDevice9::GetPaletteEntries (
+HRESULT STDMETHODCALLTYPE FakeD3d9Device::GetPaletteEntries (
     UINT PaletteNumber,
     PALETTEENTRY* pEntries)
 {
     return real_device_->GetPaletteEntries (PaletteNumber, pEntries);
 }
 
-HRESULT STDMETHODCALLTYPE FakeDirect3dDevice9::SetCurrentTexturePalette (
+HRESULT STDMETHODCALLTYPE FakeD3d9Device::SetCurrentTexturePalette (
     UINT PaletteNumber)
 {
     return real_device_->SetCurrentTexturePalette (PaletteNumber);
 }
 
-HRESULT STDMETHODCALLTYPE FakeDirect3dDevice9::GetCurrentTexturePalette (
+HRESULT STDMETHODCALLTYPE FakeD3d9Device::GetCurrentTexturePalette (
     UINT *PaletteNumber)
 {
     return real_device_->GetCurrentTexturePalette (PaletteNumber);
 }
 
-HRESULT STDMETHODCALLTYPE FakeDirect3dDevice9::SetScissorRect (
+HRESULT STDMETHODCALLTYPE FakeD3d9Device::SetScissorRect (
     CONST RECT* pRect)
 {
     return real_device_->SetScissorRect (pRect);
 }
 
-HRESULT STDMETHODCALLTYPE FakeDirect3dDevice9::GetScissorRect (
+HRESULT STDMETHODCALLTYPE FakeD3d9Device::GetScissorRect (
     RECT* pRect)
 {
     return real_device_->GetScissorRect (pRect);
 }
 
-HRESULT STDMETHODCALLTYPE FakeDirect3dDevice9::SetSoftwareVertexProcessing (
+HRESULT STDMETHODCALLTYPE FakeD3d9Device::SetSoftwareVertexProcessing (
     BOOL bSoftware)
 {
     return real_device_->SetSoftwareVertexProcessing (bSoftware);
 }
 
-BOOL STDMETHODCALLTYPE FakeDirect3dDevice9::GetSoftwareVertexProcessing ()
+BOOL STDMETHODCALLTYPE FakeD3d9Device::GetSoftwareVertexProcessing ()
 {
     return real_device_->GetSoftwareVertexProcessing ();
 }
 
-HRESULT STDMETHODCALLTYPE FakeDirect3dDevice9::SetNPatchMode (
+HRESULT STDMETHODCALLTYPE FakeD3d9Device::SetNPatchMode (
     float nSegments)
 {
     return real_device_->SetNPatchMode (nSegments);
 }
 
-float STDMETHODCALLTYPE FakeDirect3dDevice9::GetNPatchMode ()
+float STDMETHODCALLTYPE FakeD3d9Device::GetNPatchMode ()
 {
     return real_device_->GetNPatchMode ();
 }
 
-HRESULT STDMETHODCALLTYPE FakeDirect3dDevice9::DrawPrimitive (
+HRESULT STDMETHODCALLTYPE FakeD3d9Device::DrawPrimitive (
     D3DPRIMITIVETYPE PrimitiveType,
     UINT StartVertex,
     UINT PrimitiveCount)
@@ -683,7 +699,7 @@ HRESULT STDMETHODCALLTYPE FakeDirect3dDevice9::DrawPrimitive (
     return real_device_->DrawPrimitive (PrimitiveType, StartVertex, PrimitiveCount);
 }
 
-HRESULT STDMETHODCALLTYPE FakeDirect3dDevice9::DrawIndexedPrimitive (
+HRESULT STDMETHODCALLTYPE FakeD3d9Device::DrawIndexedPrimitive (
     D3DPRIMITIVETYPE PrimitiveType,
     INT BaseVertexIndex,
     UINT MinVertexIndex,
@@ -696,7 +712,7 @@ HRESULT STDMETHODCALLTYPE FakeDirect3dDevice9::DrawIndexedPrimitive (
         NumVertices, startIndex, primCount);
 }
 
-HRESULT STDMETHODCALLTYPE FakeDirect3dDevice9::DrawPrimitiveUP (
+HRESULT STDMETHODCALLTYPE FakeD3d9Device::DrawPrimitiveUP (
     D3DPRIMITIVETYPE PrimitiveType,
     UINT PrimitiveCount,
     CONST void* pVertexStreamZeroData,
@@ -706,7 +722,7 @@ HRESULT STDMETHODCALLTYPE FakeDirect3dDevice9::DrawPrimitiveUP (
         PrimitiveType, PrimitiveCount, pVertexStreamZeroData, VertexStreamZeroStride);
 }
 
-HRESULT STDMETHODCALLTYPE FakeDirect3dDevice9::DrawIndexedPrimitiveUP (
+HRESULT STDMETHODCALLTYPE FakeD3d9Device::DrawIndexedPrimitiveUP (
     D3DPRIMITIVETYPE PrimitiveType,
     UINT MinVertexIndex,
     UINT NumVertices,
@@ -721,7 +737,7 @@ HRESULT STDMETHODCALLTYPE FakeDirect3dDevice9::DrawIndexedPrimitiveUP (
         IndexDataFormat, pVertexStreamZeroData, VertexStreamZeroStride);
 }
 
-HRESULT STDMETHODCALLTYPE FakeDirect3dDevice9::ProcessVertices (
+HRESULT STDMETHODCALLTYPE FakeD3d9Device::ProcessVertices (
     UINT SrcStartIndex,
     UINT DestIndex,
     UINT VertexCount,
@@ -733,57 +749,57 @@ HRESULT STDMETHODCALLTYPE FakeDirect3dDevice9::ProcessVertices (
         SrcStartIndex, DestIndex, VertexCount, pDestBuffer, pVertexDecl, Flags);
 }
 
-HRESULT STDMETHODCALLTYPE FakeDirect3dDevice9::CreateVertexDeclaration (
+HRESULT STDMETHODCALLTYPE FakeD3d9Device::CreateVertexDeclaration (
     CONST D3DVERTEXELEMENT9* pVertexElements,
     IDirect3DVertexDeclaration9** ppDecl)
 {
     return real_device_->CreateVertexDeclaration (pVertexElements, ppDecl);
 }
 
-HRESULT STDMETHODCALLTYPE FakeDirect3dDevice9::SetVertexDeclaration (
+HRESULT STDMETHODCALLTYPE FakeD3d9Device::SetVertexDeclaration (
     IDirect3DVertexDeclaration9* pDecl)
 {
     return real_device_->SetVertexDeclaration (pDecl);
 }
 
-HRESULT STDMETHODCALLTYPE FakeDirect3dDevice9::GetVertexDeclaration (
+HRESULT STDMETHODCALLTYPE FakeD3d9Device::GetVertexDeclaration (
     IDirect3DVertexDeclaration9** ppDecl)
 {
     return real_device_->GetVertexDeclaration (ppDecl);
 }
 
-HRESULT STDMETHODCALLTYPE FakeDirect3dDevice9::SetFVF (
+HRESULT STDMETHODCALLTYPE FakeD3d9Device::SetFVF (
     DWORD FVF)
 {
     return real_device_->SetFVF (FVF);
 }
 
-HRESULT STDMETHODCALLTYPE FakeDirect3dDevice9::GetFVF (
+HRESULT STDMETHODCALLTYPE FakeD3d9Device::GetFVF (
     DWORD* pFVF)
 {
     return real_device_->GetFVF (pFVF);
 }
 
-HRESULT STDMETHODCALLTYPE FakeDirect3dDevice9::CreateVertexShader (
+HRESULT STDMETHODCALLTYPE FakeD3d9Device::CreateVertexShader (
     CONST DWORD* pFunction,
     IDirect3DVertexShader9** ppShader)
 {
     return real_device_->CreateVertexShader (pFunction, ppShader);
 }
 
-HRESULT STDMETHODCALLTYPE FakeDirect3dDevice9::SetVertexShader (
+HRESULT STDMETHODCALLTYPE FakeD3d9Device::SetVertexShader (
     IDirect3DVertexShader9* pShader)
 {
     return real_device_->SetVertexShader (pShader);
 }
 
-HRESULT STDMETHODCALLTYPE FakeDirect3dDevice9::GetVertexShader (
+HRESULT STDMETHODCALLTYPE FakeD3d9Device::GetVertexShader (
     IDirect3DVertexShader9** ppShader)
 {
     return real_device_->GetVertexShader (ppShader);
 }
 
-HRESULT STDMETHODCALLTYPE FakeDirect3dDevice9::SetVertexShaderConstantF (
+HRESULT STDMETHODCALLTYPE FakeD3d9Device::SetVertexShaderConstantF (
     UINT StartRegister,
     CONST float* pConstantData,
     UINT Vector4fCount)
@@ -792,7 +808,7 @@ HRESULT STDMETHODCALLTYPE FakeDirect3dDevice9::SetVertexShaderConstantF (
         StartRegister, pConstantData, Vector4fCount);
 }
 
-HRESULT STDMETHODCALLTYPE FakeDirect3dDevice9::GetVertexShaderConstantF (
+HRESULT STDMETHODCALLTYPE FakeD3d9Device::GetVertexShaderConstantF (
     UINT StartRegister,
     float* pConstantData,
     UINT Vector4fCount)
@@ -801,7 +817,7 @@ HRESULT STDMETHODCALLTYPE FakeDirect3dDevice9::GetVertexShaderConstantF (
         StartRegister, pConstantData, Vector4fCount);
 }
 
-HRESULT STDMETHODCALLTYPE FakeDirect3dDevice9::SetVertexShaderConstantI (
+HRESULT STDMETHODCALLTYPE FakeD3d9Device::SetVertexShaderConstantI (
     UINT StartRegister,
     CONST int* pConstantData,
     UINT Vector4iCount)
@@ -810,7 +826,7 @@ HRESULT STDMETHODCALLTYPE FakeDirect3dDevice9::SetVertexShaderConstantI (
         StartRegister, pConstantData, Vector4iCount);
 }
 
-HRESULT STDMETHODCALLTYPE FakeDirect3dDevice9::GetVertexShaderConstantI (
+HRESULT STDMETHODCALLTYPE FakeD3d9Device::GetVertexShaderConstantI (
     UINT StartRegister,
     int* pConstantData,
     UINT Vector4iCount)
@@ -819,7 +835,7 @@ HRESULT STDMETHODCALLTYPE FakeDirect3dDevice9::GetVertexShaderConstantI (
         StartRegister, pConstantData, Vector4iCount);
 }
 
-HRESULT STDMETHODCALLTYPE FakeDirect3dDevice9::SetVertexShaderConstantB (
+HRESULT STDMETHODCALLTYPE FakeD3d9Device::SetVertexShaderConstantB (
     UINT StartRegister,
     CONST BOOL* pConstantData,
     UINT  BoolCount)
@@ -828,7 +844,7 @@ HRESULT STDMETHODCALLTYPE FakeDirect3dDevice9::SetVertexShaderConstantB (
         StartRegister, pConstantData, BoolCount);
 }
 
-HRESULT STDMETHODCALLTYPE FakeDirect3dDevice9::GetVertexShaderConstantB (
+HRESULT STDMETHODCALLTYPE FakeD3d9Device::GetVertexShaderConstantB (
     UINT StartRegister,
     BOOL* pConstantData,
     UINT BoolCount)
@@ -837,7 +853,7 @@ HRESULT STDMETHODCALLTYPE FakeDirect3dDevice9::GetVertexShaderConstantB (
         StartRegister, pConstantData, BoolCount);
 }
 
-HRESULT STDMETHODCALLTYPE FakeDirect3dDevice9::SetStreamSource (
+HRESULT STDMETHODCALLTYPE FakeD3d9Device::SetStreamSource (
     UINT StreamNumber,
     IDirect3DVertexBuffer9* pStreamData,
     UINT OffsetInBytes,
@@ -847,7 +863,7 @@ HRESULT STDMETHODCALLTYPE FakeDirect3dDevice9::SetStreamSource (
         StreamNumber, pStreamData, OffsetInBytes, Stride);
 }
 
-HRESULT STDMETHODCALLTYPE FakeDirect3dDevice9::GetStreamSource (
+HRESULT STDMETHODCALLTYPE FakeD3d9Device::GetStreamSource (
     UINT StreamNumber,
     IDirect3DVertexBuffer9** ppStreamData,
     UINT* pOffsetInBytes,
@@ -857,52 +873,52 @@ HRESULT STDMETHODCALLTYPE FakeDirect3dDevice9::GetStreamSource (
         StreamNumber, ppStreamData, pOffsetInBytes, pStride);
 }
 
-HRESULT STDMETHODCALLTYPE FakeDirect3dDevice9::SetStreamSourceFreq (
+HRESULT STDMETHODCALLTYPE FakeD3d9Device::SetStreamSourceFreq (
     UINT StreamNumber,
     UINT Setting)
 {
     return real_device_->SetStreamSourceFreq (StreamNumber, Setting);
 }
 
-HRESULT STDMETHODCALLTYPE FakeDirect3dDevice9::GetStreamSourceFreq (
+HRESULT STDMETHODCALLTYPE FakeD3d9Device::GetStreamSourceFreq (
     UINT StreamNumber,
     UINT* pSetting)
 {
     return real_device_->GetStreamSourceFreq (StreamNumber, pSetting);
 }
 
-HRESULT STDMETHODCALLTYPE FakeDirect3dDevice9::SetIndices (
+HRESULT STDMETHODCALLTYPE FakeD3d9Device::SetIndices (
     IDirect3DIndexBuffer9* pIndexData)
 {
     return real_device_->SetIndices (pIndexData);
 }
 
-HRESULT STDMETHODCALLTYPE FakeDirect3dDevice9::GetIndices (
+HRESULT STDMETHODCALLTYPE FakeD3d9Device::GetIndices (
     IDirect3DIndexBuffer9** ppIndexData)
 {
     return real_device_->GetIndices (ppIndexData);
 }
 
-HRESULT STDMETHODCALLTYPE FakeDirect3dDevice9::CreatePixelShader (
+HRESULT STDMETHODCALLTYPE FakeD3d9Device::CreatePixelShader (
     CONST DWORD* pFunction,
     IDirect3DPixelShader9** ppShader)
 {
     return real_device_->CreatePixelShader (pFunction, ppShader);
 }
 
-HRESULT STDMETHODCALLTYPE FakeDirect3dDevice9::SetPixelShader (
+HRESULT STDMETHODCALLTYPE FakeD3d9Device::SetPixelShader (
     IDirect3DPixelShader9* pShader)
 {
     return real_device_->SetPixelShader (pShader);
 }
 
-HRESULT STDMETHODCALLTYPE FakeDirect3dDevice9::GetPixelShader (
+HRESULT STDMETHODCALLTYPE FakeD3d9Device::GetPixelShader (
     IDirect3DPixelShader9** ppShader)
 {
     return real_device_->GetPixelShader (ppShader);
 }
 
-HRESULT STDMETHODCALLTYPE FakeDirect3dDevice9::SetPixelShaderConstantF (
+HRESULT STDMETHODCALLTYPE FakeD3d9Device::SetPixelShaderConstantF (
     UINT StartRegister,
     CONST float* pConstantData,
     UINT Vector4fCount)
@@ -911,7 +927,7 @@ HRESULT STDMETHODCALLTYPE FakeDirect3dDevice9::SetPixelShaderConstantF (
         StartRegister, pConstantData, Vector4fCount);
 }
 
-HRESULT STDMETHODCALLTYPE FakeDirect3dDevice9::GetPixelShaderConstantF (
+HRESULT STDMETHODCALLTYPE FakeD3d9Device::GetPixelShaderConstantF (
     UINT StartRegister,
     float* pConstantData,
     UINT Vector4fCount)
@@ -920,7 +936,7 @@ HRESULT STDMETHODCALLTYPE FakeDirect3dDevice9::GetPixelShaderConstantF (
         StartRegister, pConstantData, Vector4fCount);
 }
 
-HRESULT STDMETHODCALLTYPE FakeDirect3dDevice9::SetPixelShaderConstantI (
+HRESULT STDMETHODCALLTYPE FakeD3d9Device::SetPixelShaderConstantI (
     UINT StartRegister,
     CONST int* pConstantData,
     UINT Vector4iCount)
@@ -929,7 +945,7 @@ HRESULT STDMETHODCALLTYPE FakeDirect3dDevice9::SetPixelShaderConstantI (
         StartRegister, pConstantData, Vector4iCount);
 }
 
-HRESULT STDMETHODCALLTYPE FakeDirect3dDevice9::GetPixelShaderConstantI (
+HRESULT STDMETHODCALLTYPE FakeD3d9Device::GetPixelShaderConstantI (
     UINT StartRegister,
     int* pConstantData,
     UINT Vector4iCount)
@@ -938,7 +954,7 @@ HRESULT STDMETHODCALLTYPE FakeDirect3dDevice9::GetPixelShaderConstantI (
         StartRegister, pConstantData, Vector4iCount);
 }
 
-HRESULT STDMETHODCALLTYPE FakeDirect3dDevice9::SetPixelShaderConstantB (
+HRESULT STDMETHODCALLTYPE FakeD3d9Device::SetPixelShaderConstantB (
     UINT StartRegister,
     CONST BOOL* pConstantData,
     UINT  BoolCount)
@@ -947,7 +963,7 @@ HRESULT STDMETHODCALLTYPE FakeDirect3dDevice9::SetPixelShaderConstantB (
         StartRegister, pConstantData, BoolCount);
 }
 
-HRESULT STDMETHODCALLTYPE FakeDirect3dDevice9::GetPixelShaderConstantB (
+HRESULT STDMETHODCALLTYPE FakeD3d9Device::GetPixelShaderConstantB (
     UINT StartRegister,
     BOOL* pConstantData,
     UINT BoolCount)
@@ -956,7 +972,7 @@ HRESULT STDMETHODCALLTYPE FakeDirect3dDevice9::GetPixelShaderConstantB (
         StartRegister, pConstantData, BoolCount);
 }
 
-HRESULT STDMETHODCALLTYPE FakeDirect3dDevice9::DrawRectPatch (
+HRESULT STDMETHODCALLTYPE FakeD3d9Device::DrawRectPatch (
     UINT Handle,
     CONST float* pNumSegs,
     CONST D3DRECTPATCH_INFO* pRectPatchInfo)
@@ -964,7 +980,7 @@ HRESULT STDMETHODCALLTYPE FakeDirect3dDevice9::DrawRectPatch (
     return real_device_->DrawRectPatch (Handle, pNumSegs, pRectPatchInfo);
 }
 
-HRESULT STDMETHODCALLTYPE FakeDirect3dDevice9::DrawTriPatch (
+HRESULT STDMETHODCALLTYPE FakeD3d9Device::DrawTriPatch (
     UINT Handle,
     CONST float* pNumSegs,
     CONST D3DTRIPATCH_INFO* pTriPatchInfo)
@@ -972,112 +988,116 @@ HRESULT STDMETHODCALLTYPE FakeDirect3dDevice9::DrawTriPatch (
     return real_device_->DrawTriPatch (Handle, pNumSegs, pTriPatchInfo);
 }
 
-HRESULT STDMETHODCALLTYPE FakeDirect3dDevice9::DeletePatch (
+HRESULT STDMETHODCALLTYPE FakeD3d9Device::DeletePatch (
     UINT Handle)
 {
     return real_device_->DeletePatch (Handle);
 }
 
-HRESULT STDMETHODCALLTYPE FakeDirect3dDevice9::CreateQuery (
+HRESULT STDMETHODCALLTYPE FakeD3d9Device::CreateQuery (
     D3DQUERYTYPE Type,
     IDirect3DQuery9** ppQuery)
 {
     return real_device_->CreateQuery (Type, ppQuery);
 }
 
-void FakeDirect3dDevice9::calculate_props ()
+void FakeD3d9Device::calculate_props ()
 {
-    const bbi::DllContext& context = LgVidContext;
-
-    if (!context.show_subs)
-        return;
-
-
     font_height_ = 0;
     text_height_ = 0;
     space_after_ = 0;
 
-
-    HRESULT d3dResult;
-
-    d3dResult = real_device_->GetViewport (&view_port_);
-
-    if (d3dResult != D3D_OK)
+    if (!lgvs::g_enable_subs)
         return;
 
 
-    float fontHeightF = context.font_size;
+    HRESULT d3d_result;
 
-    if (context.font_size_in_percents)
-        fontHeightF *= view_port_.Height * 0.01F;
+    d3d_result = real_device_->GetViewport (&view_port_);
 
-    font_height_ = static_cast<int> (fontHeightF);
-    font_weight_ = static_cast<int> (context.font_weight);
-
-
-    float spaceAfterF = context.space_after;
-
-    if (context.space_after_in_percents)
-        spaceAfterF *= view_port_.Height * 0.01F;
-
-    if (spaceAfterF < 0.0F)
-        spaceAfterF = 0.0F;
-
-    space_after_ = static_cast<int> (spaceAfterF);
+    if (d3d_result != D3D_OK)
+        return;
 
 
-    float shadow_offset_xf = context.shadow_offset_x;
+    float font_height_f = lgvs::g_font_info.font_size;
 
-    if (context.shadow_offset_x_in_percents)
+    if (lgvs::g_font_info.font_size_in_percents)
+        font_height_f *= view_port_.Height * 0.01F;
+
+    font_height_ = static_cast<int> (font_height_f);
+    font_weight_ = static_cast<int> (lgvs::g_font_info.font_weight);
+
+
+    float space_after_f = lgvs::g_info.space_after;
+
+    if (lgvs::g_info.space_after_in_percents)
+        space_after_f *= view_port_.Height * 0.01F;
+
+    if (space_after_f < 0.0F)
+        space_after_f = 0.0F;
+
+    space_after_ = static_cast<int> (space_after_f);
+
+
+    float shadow_offset_xf = lgvs::g_font_info.shadow_offset_x;
+
+    if (lgvs::g_font_info.shadow_offset_x_in_percents)
         shadow_offset_xf *= view_port_.Height * 0.01F;
 
     shadow_offset_x_ = static_cast<int> (shadow_offset_xf);
 
 
-    float shadowOffsetYF = context.shadow_offset_y;
+    float shadow_offset_y_f = lgvs::g_font_info.shadow_offset_y;
 
-    if (context.shadow_offset_y_in_percents)
-        shadowOffsetYF *= view_port_.Height * 0.01F;
+    if (lgvs::g_font_info.shadow_offset_y_in_percents)
+        shadow_offset_y_f *= view_port_.Height * 0.01F;
 
-    shadow_offset_y_ = static_cast<int> (shadowOffsetYF);
+    shadow_offset_y_ = static_cast<int> (shadow_offset_y_f);
 }
 
-void FakeDirect3dDevice9::measure_text ()
+void FakeD3d9Device::measure_text ()
 {
-    const bbi::DllContext& context = LgVidContext;
-
-
     RECT rect;
-    HRESULT d3dResult;
+    HRESULT d3d_result;
 
     text_height_ = 0;
 
-    for (int i = 0; i < context.line_count; ++i) {
-        const wchar_t* line = context.lines[i];
-        int lineLength = context.lines_lengths[i];
+    if (lgvs::g_sub_index < 0)
+        return;
+
+    if (lgvs::g_subs.empty ())
+        return;
+
+    const lgvs::Subtitle& subtitle = lgvs::g_subs[lgvs::g_sub_index];
+    const lgvs::WStringList& lines = subtitle.lines;
+    lines_sizes_.resize (lines.size ());
+
+    for (size_t i = 0; i < lines.size (); ++i) {
+        const std::wstring& line = lines[i];
+        size_t line_length = line.size ();
         SIZE& line_size = lines_sizes_[i];
 
-        if (lineLength > 0) {
+        if (line_length > 0) {
             rect.left = 0;
             rect.top = 0;
             rect.right = 0;
             rect.bottom = 0;
 
-            d3dResult = font_->PreloadText (line, lineLength);
+            d3d_result = font_->PreloadText (line.c_str (), line_length);
 
-            INT textResult = font_->DrawTextW (
+            INT text_result = font_->DrawTextW (
                 sprite_, // sprite
-                line, // text
-                lineLength, // count,
+                line.c_str (), // text
+                line_length, // count,
                 &rect, // rectangle
                 DT_NOCLIP | DT_LEFT | DT_TOP | DT_SINGLELINE | DT_CALCRECT, // format
                 0 // color
             );
 
-            if (textResult == 0)
-                textResult = font_height_ - 1;
+            if (text_result == 0)
+                text_result = font_height_ - 1;
 
-            line_size.cy = textResult + 1;
+            line_size.cy = text_result + 1;
             line_size.cx = rect.right + 1;
 
             text_height_ += line_size.cy;
@@ -1089,31 +1109,32 @@ void FakeDirect3dDevice9::measure_text ()
     }
 }
 
-void FakeDirect3dDevice9::draw_subtitle ()
+void FakeD3d9Device::draw_subtitle ()
 {
     if (is_device_lost_)
         return;
 
-
-    const bbi::DllContext& context = LgVidContext;
-
-    if (!context.show_subs) {
-        bbi::ComHelper::release_and_null (font_);
-        bbi::ComHelper::release_and_null (sprite_);
+    if (!lgvs::g_enable_subs) {
+        lgvs::ComHelper::release_and_null (font_);
+        lgvs::ComHelper::release_and_null (sprite_);
         return;
     }
 
+    if (lgvs::g_sub_index < 0)
+        return;
 
-    int line_count = context.line_count;
+    const lgvs::Subtitle& subtitle = lgvs::g_subs[lgvs::g_sub_index];
 
-    if (line_count <= 0)
+    size_t line_count = subtitle.lines.size ();
+
+    if (line_count == 0)
         return;
 
 
-    HRESULT d3dResult = D3D_OK;
+    HRESULT d3d_result = D3D_OK;
 
     if (sprite_ == NULL) {
-        d3dResult = d3dx9_funcs_->create_sprite (
+        d3d_result = d3dx9_funcs_->create_sprite (
             real_device_,
             &sprite_);
     }
@@ -1122,7 +1143,7 @@ void FakeDirect3dDevice9::draw_subtitle ()
         calculate_props ();
 
         if (font_height_ > 0) {
-            d3dResult = d3dx9_funcs_->create_font (
+            d3d_result = d3dx9_funcs_->create_font (
                 real_device_,
                 font_height_, // height
                 0, // width
@@ -1133,7 +1154,7 @@ void FakeDirect3dDevice9::draw_subtitle ()
                 OUT_TT_PRECIS, // precision
                 DEFAULT_QUALITY, // quality
                 FF_DONTCARE | DEFAULT_PITCH, // pitch and family
-                context.font_family, // typeface name
+                lgvs::g_font_info.font_family.c_str (), // typeface name
                 &font_ // result
             );
         }
@@ -1143,58 +1164,59 @@ void FakeDirect3dDevice9::draw_subtitle ()
         return;
 
 
-    if (old_sub_index_ != context.sub_index) {
+    if (lgvs::g_old_sub_index != lgvs::g_sub_index) {
         measure_text ();
-        old_sub_index_ = context.sub_index;
+        lgvs::g_old_sub_index = lgvs::g_sub_index;
     }
 
     if (sprite_ != NULL)
-        d3dResult = sprite_->Begin (D3DXSPRITE_ALPHABLEND);
+        d3d_result = sprite_->Begin (D3DXSPRITE_ALPHABLEND);
 
-    INT textResult = 0;
+    INT text_result = 0;
 
     RECT rect;
 
 
-    int baseX = view_port_.X;
+    int base_x = view_port_.X;
     int y = view_port_.Y + view_port_.Height - text_height_ - space_after_;
+    const lgvs::WStringList& lines = subtitle.lines;
 
-    for (int i = 0; i < line_count; ++i) {
-        const wchar_t* line = context.lines[i];
-        int lineLength = context.lines_lengths[i];
+    for (size_t i = 0; i < line_count; ++i) {
+        const std::wstring& line = lines[i];
+        size_t line_length = line.size ();
         const SIZE& line_size = lines_sizes_[i];
 
-        if ((lineLength > 0) && ((line_size.cx > 0) && (line_size.cy > 0))) {
-            rect.left = baseX + (static_cast<LONG> (view_port_.Width) - line_size.cx) / 2;
+        if ((line_length > 0) && ((line_size.cx > 0) && (line_size.cy > 0))) {
+            rect.left = base_x + (static_cast<LONG> (view_port_.Width) - line_size.cx) / 2;
             rect.top = y;
             rect.right = rect.left + line_size.cx;
             rect.bottom = rect.top + line_size.cy;
 
 
-            if ((shadow_offset_x_ != 0) && (shadow_offset_y_ != 0)) {
+            if (shadow_offset_x_ != 0 && shadow_offset_y_ != 0) {
                 rect.left += shadow_offset_x_;
                 rect.top += shadow_offset_y_;
 
-                textResult = font_->DrawTextW (
+                text_result = font_->DrawTextW (
                     sprite_, // sprite
-                    line, // text
-                    lineLength, // count,
+                    line.c_str (), // text
+                    line_length, // count,
                     &rect, // rectangle
                     DT_NOCLIP | DT_LEFT | DT_TOP | DT_SINGLELINE, // format
-                    context.shadow_color // color
+                    lgvs::g_font_info.shadow_color // color
                 );
 
                 rect.left -= shadow_offset_x_;
                 rect.top -= shadow_offset_y_;
             }
 
-            textResult = font_->DrawTextW (
+            text_result = font_->DrawTextW (
                 sprite_, // sprite
-                line, // text
-                lineLength, // count,
+                line.c_str (), // text
+                line_length, // count,
                 &rect, // rectangle
                 DT_NOCLIP | DT_LEFT | DT_TOP | DT_SINGLELINE, // format
-                context.font_color // color
+                lgvs::g_font_info.font_color // color
             );
 
             y += line_size.cy;
@@ -1203,5 +1225,5 @@ void FakeDirect3dDevice9::draw_subtitle ()
     }
 
     if (sprite_ != 0)
-        d3dResult = sprite_->End ();
+        d3d_result = sprite_->End ();
 }

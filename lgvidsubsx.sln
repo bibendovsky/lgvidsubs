@@ -1,0 +1,26 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Express 2012 for Windows Desktop
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "lgvidsubs", "lgvidsubs.vcxproj", "{CE80D167-0BBC-4A3A-BF78-6A13B556CABB}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "lgvidsubs_d3d9", "lgvidsubs_d3d9.vcxproj", "{937426EE-47CC-45C2-9386-4FF48504A19B}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Win32 = Debug|Win32
+		Release|Win32 = Release|Win32
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{CE80D167-0BBC-4A3A-BF78-6A13B556CABB}.Debug|Win32.ActiveCfg = Debug|Win32
+		{CE80D167-0BBC-4A3A-BF78-6A13B556CABB}.Debug|Win32.Build.0 = Debug|Win32
+		{CE80D167-0BBC-4A3A-BF78-6A13B556CABB}.Release|Win32.ActiveCfg = Release|Win32
+		{CE80D167-0BBC-4A3A-BF78-6A13B556CABB}.Release|Win32.Build.0 = Release|Win32
+		{937426EE-47CC-45C2-9386-4FF48504A19B}.Debug|Win32.ActiveCfg = Debug|Win32
+		{937426EE-47CC-45C2-9386-4FF48504A19B}.Debug|Win32.Build.0 = Debug|Win32
+		{937426EE-47CC-45C2-9386-4FF48504A19B}.Release|Win32.ActiveCfg = Release|Win32
+		{937426EE-47CC-45C2-9386-4FF48504A19B}.Release|Win32.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

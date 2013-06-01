@@ -1,16 +1,31 @@
-#ifndef D3DX9_FUNCS_H
-#define D3DX9_FUNCS_H
+/*
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library.
+ */
+
+
+#ifndef LGVS_D3DX9_FUNCS_H
+#define LGVS_D3DX9_FUNCS_H
 
 
 #include <d3dx9.h>
-#include <tchar.h>
 
 
-class D3dX9Funcs {
+class D3dx9Funcs {
 public:
-    D3dX9Funcs (LPCTSTR library_name);
+    D3dx9Funcs (LPCWSTR library_name);
 
-    ~D3dX9Funcs ();
+    ~D3dx9Funcs ();
 
 
     bool is_initialized () const;
@@ -26,7 +41,7 @@ public:
         DWORD OutputPrecision,
         DWORD Quality,
         DWORD PitchAndFamily,
-        LPCTSTR pFacename,
+        LPCWSTR pFacename,
         LPD3DXFONT* ppFont) const;
 
     HRESULT WINAPI create_sprite (
@@ -46,7 +61,7 @@ private:
         DWORD OutputPrecision,
         DWORD Quality,
         DWORD PitchAndFamily,
-        LPCTSTR pFacename,
+        LPCWSTR pFacename,
         LPD3DXFONT* ppFont);
 
     typedef HRESULT (WINAPI* FP_D3DXCREATESPRITE) (
@@ -60,9 +75,9 @@ private:
     FP_D3DXCREATESPRITE create_sprite_;
 
 
-    D3dX9Funcs (const D3dX9Funcs& that);
-    D3dX9Funcs& operator = (const D3dX9Funcs& that);
-}; // class D3dX9Funcs
+    D3dx9Funcs (const D3dx9Funcs& that);
+    D3dx9Funcs& operator = (const D3dx9Funcs& that);
+}; // class D3dx9Funcs
 
 
-#endif // D3DX9_FUNCS_H
+#endif // LGVS_D3DX9_FUNCS_H

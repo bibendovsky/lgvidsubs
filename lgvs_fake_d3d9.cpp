@@ -1,22 +1,39 @@
-#include "fake_direct3d9.h"
-#include "fake_direct3d_device9.h"
+/*
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library.
+ */
 
 
-FakeDirect3d9::FakeDirect3d9 (HMODULE real_d3d9_library, IDirect3D9* real_d3d9,
-    LPCTSTR d3dx9_library_name) :
+#include "lgvs_fake_d3d9.h"
+
+#include "lgvs_fake_d3d9_device.h"
+
+
+FakeD3d9::FakeD3d9 (HMODULE real_d3d9_library, IDirect3D9* real_d3d9,
+    LPCWSTR d3dx9_library_name) :
         real_d3d9_module_ (real_d3d9_library),
         real_d3d9_ (real_d3d9),
-        d3dx9_funcs_ (new D3dX9Funcs (d3dx9_library_name))
+        d3dx9_funcs_ (new D3dx9Funcs (d3dx9_library_name))
 {
 }
 
-FakeDirect3d9::~FakeDirect3d9 ()
+FakeD3d9::~FakeD3d9 ()
 {
     delete d3dx9_funcs_;
     ::FreeLibrary (real_d3d9_module_);
 }
 
-HRESULT STDMETHODCALLTYPE FakeDirect3d9::QueryInterface (
+HRESULT STDMETHODCALLTYPE FakeD3d9::QueryInterface (
     REFIID riid, void** ppvObj)
 {
     if (ppvObj == NULL)
@@ -31,12 +48,12 @@ HRESULT STDMETHODCALLTYPE FakeDirect3d9::QueryInterface (
     return real_d3d9_->QueryInterface (riid, ppvObj);
 }
 
-ULONG STDMETHODCALLTYPE FakeDirect3d9::AddRef ()
+ULONG STDMETHODCALLTYPE FakeD3d9::AddRef ()
 {
     return real_d3d9_->AddRef ();
 }
 
-ULONG STDMETHODCALLTYPE FakeDirect3d9::Release ()
+ULONG STDMETHODCALLTYPE FakeD3d9::Release ()
 {
     ULONG result = real_d3d9_->Release ();
 
@@ -46,18 +63,18 @@ ULONG STDMETHODCALLTYPE FakeDirect3d9::Release ()
     return result;
 }
 
-HRESULT STDMETHODCALLTYPE FakeDirect3d9::RegisterSoftwareDevice (
+HRESULT STDMETHODCALLTYPE FakeD3d9::RegisterSoftwareDevice (
     void* pInitializeFunction)
 {
     return real_d3d9_->RegisterSoftwareDevice (pInitializeFunction);
 }
 
-UINT STDMETHODCALLTYPE FakeDirect3d9::GetAdapterCount ()
+UINT STDMETHODCALLTYPE FakeD3d9::GetAdapterCount ()
 {
     return real_d3d9_->GetAdapterCount ();
 }
 
-HRESULT STDMETHODCALLTYPE FakeDirect3d9::GetAdapterIdentifier (
+HRESULT STDMETHODCALLTYPE FakeD3d9::GetAdapterIdentifier (
     UINT Adapter,
     DWORD Flags,
     D3DADAPTER_IDENTIFIER9* pIdentifier)
@@ -65,14 +82,14 @@ HRESULT STDMETHODCALLTYPE FakeDirect3d9::GetAdapterIdentifier (
     return real_d3d9_->GetAdapterIdentifier (Adapter, Flags, pIdentifier);
 }
 
-UINT STDMETHODCALLTYPE FakeDirect3d9::GetAdapterModeCount (
+UINT STDMETHODCALLTYPE FakeD3d9::GetAdapterModeCount (
     UINT Adapter,
     D3DFORMAT Format)
 {
     return real_d3d9_->GetAdapterModeCount (Adapter, Format);
 }
 
-HRESULT STDMETHODCALLTYPE FakeDirect3d9::EnumAdapterModes (
+HRESULT STDMETHODCALLTYPE FakeD3d9::EnumAdapterModes (
     UINT Adapter,
     D3DFORMAT Format,
     UINT Mode,
@@ -81,14 +98,14 @@ HRESULT STDMETHODCALLTYPE FakeDirect3d9::EnumAdapterModes (
     return real_d3d9_->EnumAdapterModes (Adapter, Format, Mode, pMode);
 }
 
-HRESULT STDMETHODCALLTYPE FakeDirect3d9::GetAdapterDisplayMode (
+HRESULT STDMETHODCALLTYPE FakeD3d9::GetAdapterDisplayMode (
     UINT Adapter,
     D3DDISPLAYMODE* pMode)
 {
     return real_d3d9_->GetAdapterDisplayMode (Adapter, pMode);
 }
 
-HRESULT STDMETHODCALLTYPE FakeDirect3d9::CheckDeviceType (
+HRESULT STDMETHODCALLTYPE FakeD3d9::CheckDeviceType (
     UINT Adapter,
     D3DDEVTYPE DevType,
     D3DFORMAT AdapterFormat,
@@ -99,7 +116,7 @@ HRESULT STDMETHODCALLTYPE FakeDirect3d9::CheckDeviceType (
         Adapter, DevType, AdapterFormat, BackBufferFormat, bWindowed);
 }
 
-HRESULT STDMETHODCALLTYPE FakeDirect3d9::CheckDeviceFormat (
+HRESULT STDMETHODCALLTYPE FakeD3d9::CheckDeviceFormat (
     UINT Adapter,
     D3DDEVTYPE DeviceType,
     D3DFORMAT AdapterFormat,
@@ -111,7 +128,7 @@ HRESULT STDMETHODCALLTYPE FakeDirect3d9::CheckDeviceFormat (
         Adapter, DeviceType, AdapterFormat, Usage, RType, CheckFormat);
 }
 
-HRESULT STDMETHODCALLTYPE FakeDirect3d9::CheckDeviceMultiSampleType (
+HRESULT STDMETHODCALLTYPE FakeD3d9::CheckDeviceMultiSampleType (
     UINT Adapter,
     D3DDEVTYPE DeviceType,
     D3DFORMAT SurfaceFormat,
@@ -123,7 +140,7 @@ HRESULT STDMETHODCALLTYPE FakeDirect3d9::CheckDeviceMultiSampleType (
         Adapter, DeviceType, SurfaceFormat, Windowed, MultiSampleType, pQualityLevels);
 }
 
-HRESULT STDMETHODCALLTYPE FakeDirect3d9::CheckDepthStencilMatch (
+HRESULT STDMETHODCALLTYPE FakeD3d9::CheckDepthStencilMatch (
     UINT Adapter,
     D3DDEVTYPE DeviceType,
     D3DFORMAT AdapterFormat,
@@ -134,7 +151,7 @@ HRESULT STDMETHODCALLTYPE FakeDirect3d9::CheckDepthStencilMatch (
         Adapter, DeviceType, AdapterFormat, RenderTargetFormat, DepthStencilFormat);
 }
 
-HRESULT STDMETHODCALLTYPE FakeDirect3d9::CheckDeviceFormatConversion (
+HRESULT STDMETHODCALLTYPE FakeD3d9::CheckDeviceFormatConversion (
     UINT Adapter,
     D3DDEVTYPE DeviceType,
     D3DFORMAT SourceFormat,
@@ -144,7 +161,7 @@ HRESULT STDMETHODCALLTYPE FakeDirect3d9::CheckDeviceFormatConversion (
         Adapter, DeviceType, SourceFormat, TargetFormat);
 }
 
-HRESULT STDMETHODCALLTYPE FakeDirect3d9::GetDeviceCaps (
+HRESULT STDMETHODCALLTYPE FakeD3d9::GetDeviceCaps (
     UINT Adapter,
     D3DDEVTYPE DeviceType,
     D3DCAPS9* pCaps)
@@ -152,13 +169,13 @@ HRESULT STDMETHODCALLTYPE FakeDirect3d9::GetDeviceCaps (
     return real_d3d9_->GetDeviceCaps (Adapter, DeviceType, pCaps);
 }
 
-HMONITOR STDMETHODCALLTYPE FakeDirect3d9::GetAdapterMonitor (
+HMONITOR STDMETHODCALLTYPE FakeD3d9::GetAdapterMonitor (
     UINT Adapter)
 {
     return real_d3d9_->GetAdapterMonitor (Adapter);
 }
 
-HRESULT STDMETHODCALLTYPE FakeDirect3d9::CreateDevice (
+HRESULT STDMETHODCALLTYPE FakeD3d9::CreateDevice (
     UINT Adapter,
     D3DDEVTYPE DeviceType,
     HWND hFocusWindow,
@@ -166,21 +183,21 @@ HRESULT STDMETHODCALLTYPE FakeDirect3d9::CreateDevice (
     D3DPRESENT_PARAMETERS* pPresentationParameters,
     IDirect3DDevice9** ppReturnedDeviceInterface)
 {
-    IDirect3DDevice9* realDevice = NULL;
-    FakeDirect3dDevice9* fakeDevice = NULL;
+    IDirect3DDevice9* real_device = NULL;
+    FakeD3d9Device* fake_device = NULL;
 
     HRESULT result = real_d3d9_->CreateDevice (
         Adapter, DeviceType, hFocusWindow, BehaviorFlags,
-        pPresentationParameters, &realDevice);
+        pPresentationParameters, &real_device);
 
     if (result == D3D_OK)
-        fakeDevice = new FakeDirect3dDevice9 (realDevice, d3dx9_funcs_);
+        fake_device = new FakeD3d9Device (real_device, d3dx9_funcs_);
 
-    if (fakeDevice != NULL)
-        *ppReturnedDeviceInterface = fakeDevice;
+    if (fake_device != NULL)
+        *ppReturnedDeviceInterface = fake_device;
     else {
-        if (realDevice != NULL)
-            realDevice->Release ();
+        if (real_device != NULL)
+            real_device->Release ();
 
         result = D3DERR_OUTOFVIDEOMEMORY;
     }

@@ -1,11 +1,28 @@
-#include "bbi_srt_parser.h"
+/*
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library.
+ */
 
+
+#include "lgvs_srt_parser.h"
+
+#include <algorithm>
 #include <sstream>
 
-#include "bbi_string_helper.h"
+#include "lgvs_string_helper.h"
 
 
-namespace bbi {
+namespace lgvs {
 
 
 // (static)
@@ -38,7 +55,7 @@ SubtitleList SrtParser::parse (std::istream& stream)
     }; // enum State
 
 
-    WString line;
+    std::wstring line;
     Subtitle subbuffer;
     SubtitleList subtitles;
 
@@ -50,7 +67,7 @@ SubtitleList SrtParser::parse (std::istream& stream)
         case ST_SKIP_BLANK:
             if (read_line (stream, line)) {
                 if (!line.empty ()) {
-                    subbuffer.clear ();
+                    subbuffer.reset ();
                     state = ST_PARSE_INDEX;
                 }
             } else
@@ -67,6 +84,7 @@ SubtitleList SrtParser::parse (std::istream& stream)
                 line_stream >> index;
 
                 if (!line_stream.fail ()) {
+                    subbuffer.original_index = index;
                     state = ST_READ_TIMESTAMPS;
                 } else
                     state = ST_ERROR;
@@ -130,11 +148,14 @@ SubtitleList SrtParser::parse (std::istream& stream)
             // or
             // \n
 
-            if ((read_line (stream, line)) && (!line.empty ())) {
+            if (read_line (stream, line) &&
+                !lgvs::StringHelper::is_empty_or_white_space (line))
+            {
                 ++subline_count;
                 state = ST_PARSE_TEXT;
             } else {
                 if (subline_count > 0) {
+                    subline_count = 0;
                     subtitles.push_back (subbuffer);
                     state = ST_SKIP_BLANK;
                 } else
@@ -146,7 +167,8 @@ SubtitleList SrtParser::parse (std::istream& stream)
             if (line.compare (L"\\n") != 0)
                 subbuffer.lines.push_back (line);
             else
-                subbuffer.lines.push_back (WString ());
+                subbuffer.lines.push_back (std::wstring ());
+
             state = ST_READ_TEXT;
             break;
 
@@ -159,21 +181,38 @@ SubtitleList SrtParser::parse (std::istream& stream)
             state = ST_QUIT;
     }
 
+
+    class SortPred {
+    public:
+        static bool compare (const Subtitle& a, const Subtitle& b)
+        {
+            return a.original_index < b.original_index;
+        }
+    };
+
+    std::sort (subtitles.begin (), subtitles.end (), SortPred::compare);
+
+    for (lgvs::SubtitleList::size_type i = 0; i < subtitles.size (); ++i)
+        subtitles[i].index = i;
+
     return subtitles;
 }
 
 
 // (static)
-bool SrtParser::read_line (std::istream& stream, WString& line)
+bool SrtParser::read_line (std::istream& stream, std::wstring& line)
 {
-    String buffer;
+    std::string buffer;
 
     std::getline (stream, buffer);
 
-    line = StringHelper::to_wstring (buffer);
+    if (!stream.fail ()) {
+        line = StringHelper::to_wstring (buffer);
+        return true;
+    }
 
-    return !stream.fail ();
+    return false;
 }
 
 
-} // namespace bbi
+} // namespace lgvs

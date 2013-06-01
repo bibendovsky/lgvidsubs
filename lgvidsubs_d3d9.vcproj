@@ -18,8 +18,8 @@
 	<Configurations>
 		<Configuration
 			Name="Debug|Win32"
-			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
-			IntermediateDirectory="$(ConfigurationName)\$(ProjectName)"
+			OutputDirectory="$(SolutionDir)$(ConfigurationName)\"
+			IntermediateDirectory="$(ConfigurationName)\$(ProjectName)\"
 			ConfigurationType="2"
 			CharacterSet="1"
 			>
@@ -45,9 +45,9 @@
 				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USRDLL;LGVIDSUBS_D3D_EXPORTS;_BIND_TO_CURRENT_VCLIBS_VERSION=1"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
-				RuntimeLibrary="3"
+				RuntimeLibrary="1"
 				WarningLevel="3"
-				DebugInformationFormat="4"
+				DebugInformationFormat="3"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -90,13 +90,14 @@
 			<Tool
 				Name="VCPostBuildEventTool"
 				Description="Embedding a correct manifest..."
-				CommandLine="mt.exe -manifest &quot;lgvidsubs.manifest&quot; -outputresource:&quot;$(TargetPath)&quot;;2"
+				CommandLine="mt.exe -manifest &quot;lgvidsubs.manifest&quot; &quot;-outputresource:$(TargetPath);2&quot;"
+				ExcludedFromBuild="true"
 			/>
 		</Configuration>
 		<Configuration
 			Name="Release|Win32"
-			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
-			IntermediateDirectory="$(ConfigurationName)\$(ProjectName)"
+			OutputDirectory="$(SolutionDir)$(ConfigurationName)\"
+			IntermediateDirectory="$(ConfigurationName)\$(ProjectName)\"
 			ConfigurationType="2"
 			CharacterSet="1"
 			WholeProgramOptimization="0"
@@ -121,7 +122,7 @@
 				OmitFramePointers="true"
 				AdditionalIncludeDirectories=".;&quot;c:\Program Files (x86)\Microsoft DirectX SDK (June 2010)\Include&quot;"
 				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;LGVIDSUBS_D3D_EXPORTS;_BIND_TO_CURRENT_VCLIBS_VERSION=1"
-				RuntimeLibrary="2"
+				RuntimeLibrary="0"
 				BufferSecurityCheck="false"
 				EnableFunctionLevelLinking="true"
 			/>
@@ -167,7 +168,8 @@
 			<Tool
 				Name="VCPostBuildEventTool"
 				Description="Embedding a correct manifest..."
-				CommandLine="mt.exe -manifest &quot;lgvidsubs.manifest&quot; -outputresource:&quot;$(TargetPath)&quot;;2"
+				CommandLine="mt.exe -manifest &quot;lgvidsubs.manifest&quot; &quot;-outputresource:$(TargetPath);2&quot;"
+				ExcludedFromBuild="true"
 			/>
 		</Configuration>
 	</Configurations>
@@ -180,23 +182,27 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
-				RelativePath=".\bbi_dll_context.cpp"
+				RelativePath=".\lgvs_d3dx9_funcs.cpp"
 				>
 			</File>
 			<File
-				RelativePath=".\d3dx9_funcs.cpp"
+				RelativePath=".\lgvs_dll_context.cpp"
 				>
 			</File>
 			<File
-				RelativePath=".\fake_direct3d9.cpp"
+				RelativePath=".\lgvs_fake_d3d9.cpp"
 				>
 			</File>
 			<File
-				RelativePath=".\fake_direct3d_device9.cpp"
+				RelativePath=".\lgvs_fake_d3d9_device.cpp"
 				>
 			</File>
 			<File
-				RelativePath=".\lgvid_d3d.cpp"
+				RelativePath=".\lgvs_lgvid_d3d9.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\lgvs_subtitle.cpp"
 				>
 			</File>
 		</Filter>
@@ -205,6 +211,42 @@
 			Filter="h;hpp;hxx;hm;inl;inc;xsd"
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
+			<File
+				RelativePath=".\lgvs_com_helper.h"
+				>
+			</File>
+			<File
+				RelativePath=".\lgvs_d3dx9_funcs.h"
+				>
+			</File>
+			<File
+				RelativePath=".\lgvs_dll_context.h"
+				>
+			</File>
+			<File
+				RelativePath=".\lgvs_fake_d3d9.h"
+				>
+			</File>
+			<File
+				RelativePath=".\lgvs_fake_d3d9_device.h"
+				>
+			</File>
+			<File
+				RelativePath=".\lgvs_lgvid_d3d9.h"
+				>
+			</File>
+			<File
+				RelativePath=".\lgvs_math.h"
+				>
+			</File>
+			<File
+				RelativePath=".\lgvs_subtitle.h"
+				>
+			</File>
+			<File
+				RelativePath=".\lgvs_types.h"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="Resource Files"

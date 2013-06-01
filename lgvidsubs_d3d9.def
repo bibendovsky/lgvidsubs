@@ -1,3 +1,7 @@
 EXPORTS
     Direct3DCreate9
-    LgVidContext DATA
+    lgs_set_global_info
+    lgs_set_global_font_info
+    lgs_set_subtitles
+    lgs_show_subtitle
+    lgs_enable_subtitles
