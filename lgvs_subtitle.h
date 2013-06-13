@@ -27,19 +27,17 @@ namespace lgvs {
 // Container for a one subtitle item.
 class Subtitle {
 public:
-    int index; // a real index of subtitle (after sorting)
-    int original_index; // an original index of subtitle (as in source file)
     int time_begin; // time (ms) when to show the subtitle
     int time_end; // time (ms) when to hide the subtitle
     WStringList lines; // text of the subtitle
 
-    Subtitle ();
-    Subtitle (const Subtitle& that);
-    ~Subtitle ();
-    Subtitle& operator = (const Subtitle& that);
+    Subtitle();
+    Subtitle(const Subtitle& that);
+    ~Subtitle();
+    Subtitle& operator=(const Subtitle& that);
 
 
-    void reset ();
+    void reset();
 }; // class Subtitle
 
 

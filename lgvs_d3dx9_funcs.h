@@ -21,16 +21,20 @@
 #include <d3dx9.h>
 
 
+namespace lgvs {
+
+
 class D3dx9Funcs {
 public:
-    D3dx9Funcs (LPCWSTR library_name);
+    D3dx9Funcs();
+    ~D3dx9Funcs();
 
-    ~D3dx9Funcs ();
+    bool initialize();
+    void uninitialize();
 
+    bool is_initialized() const;
 
-    bool is_initialized () const;
-
-    HRESULT WINAPI create_font (
+    HRESULT create_font(
         LPDIRECT3DDEVICE9 pDevice,
         INT Height,
         UINT Width,
@@ -44,13 +48,13 @@ public:
         LPCWSTR pFacename,
         LPD3DXFONT* ppFont) const;
 
-    HRESULT WINAPI create_sprite (
+    HRESULT create_sprite(
         LPDIRECT3DDEVICE9 pDevice,
         LPD3DXSPRITE* ppSprite) const;
 
 
 private:
-    typedef HRESULT (WINAPI* FP_D3DXCREATEFONT) (
+    typedef HRESULT (WINAPI* FP_D3DXCREATEFONT)(
         LPDIRECT3DDEVICE9 pDevice,
         INT Height,
         UINT Width,
@@ -64,7 +68,7 @@ private:
         LPCWSTR pFacename,
         LPD3DXFONT* ppFont);
 
-    typedef HRESULT (WINAPI* FP_D3DXCREATESPRITE) (
+    typedef HRESULT (WINAPI* FP_D3DXCREATESPRITE)(
         LPDIRECT3DDEVICE9 pDevice,
         LPD3DXSPRITE* ppSprite);
 
@@ -75,9 +79,12 @@ private:
     FP_D3DXCREATESPRITE create_sprite_;
 
 
-    D3dx9Funcs (const D3dx9Funcs& that);
-    D3dx9Funcs& operator = (const D3dx9Funcs& that);
+    D3dx9Funcs(const D3dx9Funcs& that);
+    D3dx9Funcs& operator=(const D3dx9Funcs& that);
 }; // class D3dx9Funcs
+
+
+} // namespace lgvs
 
 
 #endif // LGVS_D3DX9_FUNCS_H

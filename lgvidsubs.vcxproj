@@ -40,37 +40,37 @@
     <_ProjectFileVersion>11.0.60315.1</_ProjectFileVersion>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <IntDir>$(Configuration)\$(ProjectName)\</IntDir>
     <LinkIncremental>true</LinkIncremental>
     <PostBuildEventUseInBuild>false</PostBuildEventUseInBuild>
     <TargetName>lgvid</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <IntDir>$(Configuration)\$(ProjectName)\</IntDir>
     <LinkIncremental>false</LinkIncremental>
     <TargetName>lgvid</TargetName>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>.;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.;detours\include;C:\Program Files %28x86%29\Microsoft DirectX SDK %28June 2010%29\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;NOMINMAX;_BIND_TO_CURRENT_VCLIBS_VERSION=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MinimalRebuild>true</MinimalRebuild>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
-      <WarningLevel>Level3</WarningLevel>
+      <WarningLevel>Level4</WarningLevel>
     </ClCompile>
     <Link>
       <ModuleDefinitionFile>lgvidsubs.def</ModuleDefinitionFile>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Windows</SubSystem>
+      <AdditionalLibraryDirectories>detours\lib.x86;C:\Program Files %28x86%29\Microsoft DirectX SDK %28June 2010%29\Lib\x86;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>dxguid.lib;detours.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent />
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
       <OmitFramePointers>true</OmitFramePointers>
-      <AdditionalIncludeDirectories>.;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.;detours\include;C:\Program Files %28x86%29\Microsoft DirectX SDK %28June 2010%29\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;NOMINMAX;_BIND_TO_CURRENT_VCLIBS_VERSION=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <BufferSecurityCheck>false</BufferSecurityCheck>
@@ -83,24 +83,36 @@
       <SubSystem>Windows</SubSystem>
       <OptimizeReferences>true</OptimizeReferences>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <AdditionalLibraryDirectories>detours\lib.x86;C:\Program Files %28x86%29\Microsoft DirectX SDK %28June 2010%29\Lib\x86;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>dxguid.lib;detours.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent />
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="lgvs_dll_context.cpp" />
+    <ClCompile Include="lgvs_config.cpp" />
+    <ClCompile Include="lgvs_d3d9_renderer.cpp" />
+    <ClCompile Include="lgvs_d3dx9_funcs.cpp" />
+    <ClCompile Include="lgvs_detours.cpp" />
+    <ClCompile Include="lgvs_globals.cpp" />
     <ClCompile Include="lgvs_srt_parser.cpp" />
     <ClCompile Include="lgvs_string_helper.cpp" />
     <ClCompile Include="lgvs_subtitle.cpp" />
     <ClCompile Include="lgvid.cpp" />
     <ClCompile Include="lgvs_lgvid_subs.cpp" />
+    <ClCompile Include="lgvs_system.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="lgvs_com_helper.h" />
-    <ClInclude Include="lgvs_dll_context.h" />
+    <ClInclude Include="lgvs_config.h" />
+    <ClInclude Include="lgvs_d3d9_renderer.h" />
+    <ClInclude Include="lgvs_d3dx9_funcs.h" />
+    <ClInclude Include="lgvs_detours.h" />
+    <ClInclude Include="lgvs_globals.h" />
     <ClInclude Include="lgvs_math.h" />
     <ClInclude Include="lgvs_srt_parser.h" />
     <ClInclude Include="lgvs_string_helper.h" />
     <ClInclude Include="lgvs_subtitle.h" />
+    <ClInclude Include="lgvs_system.h" />
     <ClInclude Include="lgvs_types.h" />
     <ClInclude Include="inttypes.h" />
     <ClInclude Include="lgviddecoder.h" />

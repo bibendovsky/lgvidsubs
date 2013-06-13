@@ -14,8 +14,8 @@
  */
 
 
-#ifndef LGVS_DLL_CONTEXT_H
-#define LGVS_DLL_CONTEXT_H
+#ifndef LGVS_GLOBALS_H
+#define LGVS_GLOBALS_H
 
 
 #include "lgvs_subtitle.h"
@@ -24,7 +24,7 @@
 namespace lgvs {
 
 
-class GlobalInfo {
+class Globals {
 public:
     static const float DEFAULT_SPACE_AFTER_PCT;
     static const float MIN_SPACE_AFTER_PCT;
@@ -34,21 +34,6 @@ public:
     static const float MIN_SPACE_AFTER_PIX;
     static const float MAX_SPACE_AFTER_PIX;
 
-    float space_after;
-    bool space_after_in_percents;
-
-
-    GlobalInfo ();
-    GlobalInfo (const GlobalInfo& that);
-    ~GlobalInfo ();
-    GlobalInfo& operator = (const GlobalInfo& that);
-
-    void reset ();
-}; // class GlobalInfo
-
-
-class GlobalFontInfo {
-public:
     static const float DEFAULT_FONT_SIZE_PCT;
     static const float MIN_FONT_SIZE_PCT;
     static const float MAX_FONT_SIZE_PCT;
@@ -76,36 +61,35 @@ public:
     static const float MAX_SHADOW_OFFSET_PIX;
 
 
-    float font_size;
-    bool font_size_in_percents;
-    float font_weight;
-    unsigned font_color;
-    std::wstring font_family;
+    static float space_after;
+    static bool space_after_in_percents;
 
-    unsigned shadow_color;
-    float shadow_offset_x;
-    bool shadow_offset_x_in_percents;
-    float shadow_offset_y;
-    bool shadow_offset_y_in_percents;
+    static float font_size;
+    static bool font_size_in_percents;
+    static float font_weight;
+    static unsigned font_color;
+    static std::wstring font_family;
 
+    static unsigned shadow_color;
+    static float shadow_offset_x;
+    static bool shadow_offset_x_in_percents;
+    static float shadow_offset_y;
+    static bool shadow_offset_y_in_percents;
 
-    GlobalFontInfo ();
-    GlobalFontInfo (const GlobalFontInfo& that);
-    ~GlobalFontInfo ();
-    GlobalFontInfo& operator = (const GlobalFontInfo& that);
-
-    void reset ();
-}; // class GlobalFontInfo
+    static bool enable_subs;
+    static int sub_index;
+    static SubtitleList subs;
 
 
-typedef void (*FP_LGS_SET_GLOBAL_INFO) (const GlobalInfo& font_info);
-typedef void (*FP_LGS_SET_GLOBAL_FONT_INFO) (const GlobalFontInfo& font_info);
-typedef void (*FP_LGS_SET_SUBTITLES) (const lgvs::SubtitleList& subs);
-typedef void (*FP_LGS_SHOW_SUBTITLE) (int index);
-typedef void (*FP_LGS_ENABLE_SUBTITLES) (bool value);
+private:
+    Globals();
+    Globals(const Globals& that);
+    ~Globals();
+    Globals& operator=(const Globals& that);
+}; // class Globals
 
 
 } // namespace lgvs
 
 
-#endif // LGVS_DLL_CONTEXT_H
+#endif // LGVS_GLOBALS_H

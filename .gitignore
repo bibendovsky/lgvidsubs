@@ -1,5 +1,8 @@
 Debug
 Release
+bin.X86
+lib.X86
+obj.X86
 *.suo
 *.ncb
 *.vxcproj.user

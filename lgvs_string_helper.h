@@ -26,21 +26,25 @@ namespace lgvs {
 
 class StringHelper {
 public:
-    static std::string to_string (const std::wstring& string);
+    static std::string to_string(const std::wstring& string);
 
-    static std::wstring to_wstring (const std::string& string);
+    static std::wstring to_wstring(const std::string& string);
 
-    static void copy_w_to_c (const std::wstring& w_string,
+    static void copy_w_to_c(const std::wstring& w_string,
         wchar_t* c_string, size_t max_length);
 
-    static bool is_empty_or_white_space (const std::wstring& string);
+    static bool is_empty_or_white_space(const std::wstring& string);
+
+    static std::wstring to_lower(const std::wstring& string);
+
+    static const std::wstring& get_empty();
 
 
 private:
-    StringHelper ();
-    StringHelper (const StringHelper& that);
-    ~StringHelper ();
-    StringHelper& operator = (const StringHelper& that);
+    StringHelper();
+    StringHelper(const StringHelper& that);
+    ~StringHelper();
+    StringHelper& operator=(const StringHelper& that);
 }; // class StringHelper
 
 

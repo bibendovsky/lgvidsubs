@@ -1115,7 +1115,7 @@ struct VideoState
 			pictq[i].bmp = pOuter->m_pHostIface->CreateImageBuffer();
 
         // BBi
-        subs.initialize (pOuter->m_pHostIface, filename);
+        subs.initialize(pOuter->m_pHostIface, filename);
         // BBi
 
 		return TRUE;
@@ -1223,7 +1223,7 @@ retry:
 				// show the picture!
 
                 // BBi
-                if (!subs.has_subtitles ()) {
+                if (!subs.has_subtitles()) {
                 // BBi
 
 				pOuter->m_pHostIface->BeginVideoFrame(pictq[pictq_rindex].bmp);
@@ -1243,7 +1243,7 @@ retry:
 				pictq_mutex.Release();
 
                 // BBi
-                if (!subs.has_subtitles ()) {
+                if (!subs.has_subtitles()) {
                 // BBi
 
 				pOuter->m_pHostIface->EndVideoFrame();
@@ -2004,7 +2004,7 @@ STDMETHODIMP_(BOOL) cLGVideoDecoder::IsVideoFrameAvailable()
 	}
 
     // BBi
-    if (is->subs.has_subtitles ()) {
+    if (is->subs.has_subtitles()) {
         if (is->audio_finished == 0 || is->video_finished == 0)
             return TRUE;
     }
@@ -2022,20 +2022,20 @@ STDMETHODIMP_(void) cLGVideoDecoder::RequestVideoFrame()
 	}
 
     // BBi
-    if (is != NULL && is->subs.has_subtitles ()) {
+    if (is != NULL && is->subs.has_subtitles()) {
         if (is->audio_finished == 0 || is->video_finished == 0) {
-            double pts = is->get_master_clock ();
+            double pts = is->get_master_clock();
 
-            if (is->subs.check_subtitle (pts))
+            if (is->subs.check_subtitle(pts))
                 is->subs.refresh_video = true;
         }
 
         if (is->subs.refresh_video) {
             is->subs.refresh_video = false;
 
-            m_pHostIface->BeginVideoFrame (
+            m_pHostIface->BeginVideoFrame(
                 is->pictq[is->pictq_rindex].bmp);
-            m_pHostIface->EndVideoFrame ();
+            m_pHostIface->EndVideoFrame();
         }
     }
     // BBi

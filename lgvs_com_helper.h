@@ -27,21 +27,21 @@ namespace lgvs {
 class ComHelper {
 public:
     template<class T>
-    static void release_and_null (T*& object)
+    static void release_and_null(T*& object)
     {
         if (object == NULL)
             return;
 
-        object->Release ();
+        object->Release();
         object = NULL;
     }
 
 
 private:
-    ComHelper ();
-    ComHelper (const ComHelper& that);
-    ~ComHelper ();
-    ComHelper& operator = (const ComHelper& that);
+    ComHelper();
+    ComHelper(const ComHelper& that);
+    ~ComHelper();
+    ComHelper& operator=(const ComHelper& that);
 }; // class ComHelper
 
 

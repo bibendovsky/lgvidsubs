@@ -21,9 +21,6 @@
     <ClCompile Include="lgvs_lgvid_subs.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="lgvs_dll_context.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="lgvs_srt_parser.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -31,6 +28,24 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="lgvs_subtitle.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="lgvs_detours.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="lgvs_system.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="lgvs_d3dx9_funcs.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="lgvs_globals.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="lgvs_d3d9_renderer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="lgvs_config.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -47,9 +62,6 @@
     <ClInclude Include="lgvs_com_helper.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="lgvs_dll_context.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="lgvs_math.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -63,6 +75,24 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="lgvs_types.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="lgvs_detours.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="lgvs_system.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="lgvs_d3dx9_funcs.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="lgvs_globals.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="lgvs_d3d9_renderer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="lgvs_config.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

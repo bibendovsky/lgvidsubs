@@ -20,29 +20,25 @@
 namespace lgvs {
 
 
-Subtitle::Subtitle ()
+Subtitle::Subtitle()
 {
-    reset ();
+    reset();
 }
 
-Subtitle::Subtitle (const Subtitle& that) :
-    index (that.index),
-    original_index (that.original_index),
-    time_begin (that.time_begin),
-    time_end (that.time_end),
-    lines (that.lines)
+Subtitle::Subtitle(const Subtitle& that) :
+    time_begin(that.time_begin),
+    time_end(that.time_end),
+    lines(that.lines)
 {
 }
 
-Subtitle::~Subtitle ()
+Subtitle::~Subtitle()
 {
 }
 
-Subtitle& Subtitle::operator = (const Subtitle& that)
+Subtitle& Subtitle::operator=(const Subtitle& that)
 {
     if (&that != this) {
-        index = that.index;
-        original_index = that.original_index;
         time_begin = that.time_begin;
         time_end = that.time_end;
         lines = that.lines;
@@ -51,13 +47,11 @@ Subtitle& Subtitle::operator = (const Subtitle& that)
     return *this;
 }
 
-void Subtitle::reset ()
+void Subtitle::reset()
 {
-    index = 0;
-    original_index = 0;
     time_begin = 0;
     time_end = 0;
-    lines.clear ();
+    lines.clear();
 }
 
 

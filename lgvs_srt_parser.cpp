@@ -26,7 +26,7 @@ namespace lgvs {
 
 
 // (static)
-SubtitleList SrtParser::parse (std::istream& stream)
+SubtitleList SrtParser::parse(std::istream& stream)
 {
     enum State {
         // Search for a non-blank line
@@ -60,14 +60,14 @@ SubtitleList SrtParser::parse (std::istream& stream)
     SubtitleList subtitles;
 
     // Subtitle's lines counter
-    int subline_count;
+    int subline_count = 0;
 
     for (State state = ST_SKIP_BLANK; state != ST_QUIT; ) {
         switch (state) {
         case ST_SKIP_BLANK:
-            if (read_line (stream, line)) {
-                if (!line.empty ()) {
-                    subbuffer.reset ();
+            if (read_line(stream, line)) {
+                if (!line.empty()) {
+                    subbuffer.reset();
                     state = ST_PARSE_INDEX;
                 }
             } else
@@ -80,19 +80,18 @@ SubtitleList SrtParser::parse (std::istream& stream)
                 // index
 
                 int index;
-                std::wistringstream line_stream (line);
+                std::wistringstream line_stream(line);
                 line_stream >> index;
 
-                if (!line_stream.fail ()) {
-                    subbuffer.original_index = index;
+                if (line_stream)
                     state = ST_READ_TIMESTAMPS;
-                } else
+                else
                     state = ST_ERROR;
             }
             break;
 
         case ST_READ_TIMESTAMPS:
-            if (read_line (stream, line))
+            if (read_line(stream, line))
                 state = ST_PARSE_TIMESTAMPS;
             else
                 state = ST_ERROR;
@@ -121,14 +120,14 @@ SubtitleList SrtParser::parse (std::istream& stream)
                 wchar_t dash1;
                 wchar_t dash2;
                 wchar_t angle;
-                std::wistringstream line_stream (line);
+                std::wistringstream line_stream(line);
 
                 line_stream >>
                     hh1 >> sign1_1 >> mm1 >> sign1_2 >> ss1 >> sign1_3 >> mss1 >>
                     dash1 >> dash2 >> angle >>
                     hh2 >> sign2_1 >> mm2 >> sign2_2 >> ss2 >> sign2_3 >> mss2;
 
-                if (!line_stream.fail ()) {
+                if (line_stream) {
                     int msecs1 = (hh1 * 3600000) + (mm1 * 60000) + (ss1 * 1000) + mss1;
                     int msecs2 = (hh2 * 3600000) + (mm2 * 60000) + (ss2 * 1000) + mss2;
 
@@ -148,15 +147,15 @@ SubtitleList SrtParser::parse (std::istream& stream)
             // or
             // \n
 
-            if (read_line (stream, line) &&
-                !lgvs::StringHelper::is_empty_or_white_space (line))
+            if (read_line(stream, line) &&
+                !StringHelper::is_empty_or_white_space(line))
             {
                 ++subline_count;
                 state = ST_PARSE_TEXT;
             } else {
                 if (subline_count > 0) {
                     subline_count = 0;
-                    subtitles.push_back (subbuffer);
+                    subtitles.push_back(subbuffer);
                     state = ST_SKIP_BLANK;
                 } else
                     state = ST_ERROR;
@@ -164,10 +163,10 @@ SubtitleList SrtParser::parse (std::istream& stream)
             break;
 
         case ST_PARSE_TEXT:
-            if (line.compare (L"\\n") != 0)
-                subbuffer.lines.push_back (line);
+            if (line.compare(L"\\n") != 0)
+                subbuffer.lines.push_back(line);
             else
-                subbuffer.lines.push_back (std::wstring ());
+                subbuffer.lines.push_back(std::wstring());
 
             state = ST_READ_TEXT;
             break;
@@ -177,37 +176,23 @@ SubtitleList SrtParser::parse (std::istream& stream)
             break;
         }
 
-        if (stream.eof ())
+        if (stream.eof())
             state = ST_QUIT;
     }
-
-
-    class SortPred {
-    public:
-        static bool compare (const Subtitle& a, const Subtitle& b)
-        {
-            return a.original_index < b.original_index;
-        }
-    };
-
-    std::sort (subtitles.begin (), subtitles.end (), SortPred::compare);
-
-    for (lgvs::SubtitleList::size_type i = 0; i < subtitles.size (); ++i)
-        subtitles[i].index = i;
 
     return subtitles;
 }
 
 
 // (static)
-bool SrtParser::read_line (std::istream& stream, std::wstring& line)
+bool SrtParser::read_line(std::istream& stream, std::wstring& line)
 {
     std::string buffer;
 
-    std::getline (stream, buffer);
+    std::getline(stream, buffer);
 
-    if (!stream.fail ()) {
-        line = StringHelper::to_wstring (buffer);
+    if (stream) {
+        line = StringHelper::to_wstring(buffer);
         return true;
     }
 

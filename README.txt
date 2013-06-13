@@ -6,11 +6,15 @@ to support external subtitles in movies.
 Link to source code:
 https://github.com/bibendovsky/lgvidsubs
 
-Boris I. Bendovsky
----------------------------------------------------
-
 Original link to the NewDark patch:
 http://ariane4ever.free.fr/ariane4ever/viewtopic.php?f=2&t=4287&start=0&st=0&sk=t&sd=a&sid=5fb30e2ac9f6a8491c14c973b7176eb1
+
+
+Used third-party software
+-------------------------
+
+Microsoft Research Detours Express
+research.microsoft.com/projects/detours/
 
 
 System requirements
@@ -20,7 +24,23 @@ Same as for the NewDark patch.
 
 Installation
 ------------
-Extract "lgvid.dll" and "d3d9.dll" into the game folder.
+Extract "lgvid.dll" into the game folder.
+
+
+Compilation
+-----------
+
+You need Visual Studio to compile the project.
+Supported versions: 2008 (Full/Express), 2012 or higher (Full/Express).
+There are two solutions: a) lgvidsubs.sln and b) lgvidsubsx.sln.
+Use a) for Visual Studio 2008 and b) for the rest.
+
+Also, the project depends on the following software:
+a) Microsoft DirectX SDK (June 2010)
+   Expected to be installed in
+     "c:\Program Files (x86)\Microsoft DirectX SDK (June 2010)\".
+b) Microsoft Research Detours.
+   Read the detours/README.TXT to find out how to compile a library.
 
 
 Configuration options for "cam_ext.cfg"
@@ -33,7 +53,7 @@ value_pixels = screen_height * value_percents / 100
 
 
 subs_font_filename <filename>
------------------------
+-----------------------------
 Temporarily registers specified external font.
 Default value: <empty>
 
@@ -111,6 +131,7 @@ Example:
 subs_font_filename my_arial.ttf
 subs_font_family arial
 subs_font_size 8.0%
+subs_font_weight 700
 subs_font_color 0.8 1.0 0.8 1.0
 subs_shadow_color 0.0 0.0 0.0 0.7
 subs_shadow_offset_x 2
@@ -122,6 +143,16 @@ subs_space_after 4.0%
 ==========
 Change log
 ----------
+
+----------
+2013.06.13
+----------
+
+Integrated Direct3D wrapper into lgvid.dll.
+Removed unused Direct3D wrapper's files.
+Removed useless subtitle sorting from previous release.
+Wrote a separate config (cam_ext.cfg) reader to avoid issues
+  with parameters which contains a word 'shadow'.
 
 ----------
 2013.06.01
@@ -191,4 +222,3 @@ Added very basic support for .srt subtitles:
 
 Subtitles renders on original frame picture.
 No (yet) options for font parameters (family, size, etc.).
- 
