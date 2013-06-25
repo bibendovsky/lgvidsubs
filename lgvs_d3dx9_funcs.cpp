@@ -26,11 +26,11 @@ namespace lgvs {
 
 D3dx9Funcs::D3dx9Funcs() :
     is_initialized_(false),
-    library_(NULL),
-    create_font_(NULL),
-    create_sprite_(NULL)
+    library_(nullptr),
+    create_font_(nullptr),
+    create_sprite_(nullptr)
 {
-    if (library_ == NULL)
+    if (library_ == nullptr)
         return;
 
     create_font_ = reinterpret_cast<FP_D3DXCREATEFONT>(
@@ -39,22 +39,20 @@ D3dx9Funcs::D3dx9Funcs() :
     create_sprite_ = reinterpret_cast<FP_D3DXCREATESPRITE>(
         ::GetProcAddress (library_, "D3DXCreateSprite"));
 
-    if (create_font_ != NULL &&
-        create_sprite_ != NULL)
-    {
+    if (create_font_ != nullptr && create_sprite_ != nullptr)
         is_initialized_ = true;
-    } else {
-        create_font_ = NULL;
-        create_sprite_ = NULL;
+    else {
+        create_font_ = nullptr;
+        create_sprite_ = nullptr;
 
         ::FreeLibrary (library_);
-        library_ = NULL;
+        library_ = nullptr;
     }
 }
 
 D3dx9Funcs::~D3dx9Funcs()
 {
-    if (library_ != NULL)
+    if (library_ != nullptr)
         ::FreeLibrary (library_);
 }
 
@@ -69,7 +67,7 @@ bool D3dx9Funcs::initialize()
 
     library_ = ::LoadLibraryW(dll_file_path.c_str());
 
-    if (library_ == NULL)
+    if (library_ == nullptr)
         return false;
 
     create_font_ = reinterpret_cast<FP_D3DXCREATEFONT>(
@@ -78,7 +76,7 @@ bool D3dx9Funcs::initialize()
     create_sprite_ = reinterpret_cast<FP_D3DXCREATESPRITE>(
         ::GetProcAddress(library_, "D3DXCreateSprite"));
 
-    if (create_font_ != NULL && create_sprite_ != NULL)
+    if (create_font_ != nullptr && create_sprite_ != nullptr)
         is_initialized_ = true;
     else
         uninitialize();
@@ -90,13 +88,13 @@ void D3dx9Funcs::uninitialize()
 {
     is_initialized_ = false;
 
-    if (library_ != NULL) {
+    if (library_ != nullptr) {
         ::FreeLibrary(library_);
-        library_ = NULL;
+        library_ = nullptr;
     }
 
-    create_font_ = NULL;
-    create_sprite_ = NULL;
+    create_font_ = nullptr;
+    create_sprite_ = nullptr;
 }
 
 bool D3dx9Funcs::is_initialized() const

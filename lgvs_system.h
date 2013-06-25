@@ -50,6 +50,8 @@ public:
         const std::wstring& path,
         const std::wstring& new_extension);
 
+    static size_t get_page_size();
+
 
 private:
     System();

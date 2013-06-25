@@ -37,7 +37,7 @@ namespace lgvs {
 class LgVidSubs {
 public:
     bool refresh_video;
-
+    bool refresh_subtitle;
 
     LgVidSubs();
     ~LgVidSubs();
@@ -64,7 +64,7 @@ private:
 
     WStringList read_movie_paths();
 
-    void print_log(const char* text = NULL);
+    void print_log(const char* text = nullptr);
     void print_log(const std::string& text);
     void print_log(const std::wstring& text);
 

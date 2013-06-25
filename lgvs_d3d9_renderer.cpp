@@ -75,7 +75,7 @@ bool D3d9Renderer::initialize()
 void D3d9Renderer::uninitialize()
 {
     is_initialized_ = false;
-    device_ = NULL;
+    device_ = nullptr;
     is_device_lost_ = false;
 
     font_height_ = 0;
@@ -87,14 +87,14 @@ void D3d9Renderer::uninitialize()
     last_sub_index_ = -1;
     lines_sizes_.clear();
 
-    if (font_ != NULL) {
+    if (font_ != nullptr) {
         ComHelper::release_and_null(font_);
-        font_ = NULL;
+        font_ = nullptr;
     }
 
-    if (sprite_ != NULL) {
+    if (sprite_ != nullptr) {
         ComHelper::release_and_null(sprite_);
-        sprite_ = NULL;
+        sprite_ = nullptr;
     }
 
     x_funcs_.uninitialize();
@@ -123,7 +123,7 @@ void D3d9Renderer::calculate_props()
     if (!is_initialized_)
         return;
 
-    if (device_ == NULL)
+    if (device_ == nullptr)
         return;
 
     if (!Globals::enable_subs)
@@ -138,7 +138,7 @@ void D3d9Renderer::calculate_props()
         return;
 
 
-    float font_height_f = Globals::font_size;
+    auto font_height_f = Globals::font_size;
 
     if (Globals::font_size_in_percents)
         font_height_f *= view_port_.Height * 0.01F;
@@ -157,7 +157,7 @@ void D3d9Renderer::calculate_props()
     space_after_ = static_cast<int>(space_after_f);
 
 
-    float shadow_offset_xf = Globals::shadow_offset_x;
+    auto shadow_offset_xf = Globals::shadow_offset_x;
 
     if (Globals::shadow_offset_x_in_percents)
         shadow_offset_xf *= view_port_.Height * 0.01F;
@@ -165,7 +165,7 @@ void D3d9Renderer::calculate_props()
     shadow_offset_x_ = static_cast<int>(shadow_offset_xf);
 
 
-    float shadow_offset_y_f = Globals::shadow_offset_y;
+    auto shadow_offset_y_f = Globals::shadow_offset_y;
 
     if (Globals::shadow_offset_y_in_percents)
         shadow_offset_y_f *= view_port_.Height * 0.01F;
@@ -190,15 +190,15 @@ void D3d9Renderer::measure_text ()
     RECT rect;
     HRESULT d3d_result;
 
-    const Subtitle& subtitle =
+    const auto& subtitle =
         Globals::subs[Globals::sub_index];
     const WStringList& lines = subtitle.lines;
     lines_sizes_.resize(lines.size());
 
     for (size_t i = 0; i < lines.size(); ++i) {
-        const std::wstring& line = lines[i];
-        size_t line_length = line.size();
-        SIZE& line_size = lines_sizes_[i];
+        const auto& line = lines[i];
+        auto line_length = line.size();
+        auto& line_size = lines_sizes_[i];
 
         if (line_length > 0) {
             rect.left = 0;
@@ -208,7 +208,7 @@ void D3d9Renderer::measure_text ()
 
             d3d_result = font_->PreloadTextW(line.c_str(), line_length);
 
-            INT text_result = font_->DrawTextW(
+            auto text_result = font_->DrawTextW(
                 sprite_, // sprite
                 line.c_str(), // text
                 line_length, // count,
@@ -238,7 +238,7 @@ void D3d9Renderer::draw_subtitle()
     if (!is_initialized_)
         return;
 
-    if (device_ == NULL)
+    if (device_ == nullptr)
         return;
 
     if (is_device_lost_)
@@ -247,10 +247,10 @@ void D3d9Renderer::draw_subtitle()
     if (Globals::sub_index < 0)
         return;
 
-    const Subtitle& subtitle =
+    const auto& subtitle =
         Globals::subs[Globals::sub_index];
 
-    size_t line_count = subtitle.lines.size();
+    auto line_count = subtitle.lines.size();
 
     if (line_count == 0)
         return;
@@ -258,10 +258,10 @@ void D3d9Renderer::draw_subtitle()
 
     HRESULT d3d_result = D3D_OK;
 
-    if (sprite_ == NULL)
+    if (sprite_ == nullptr)
         d3d_result = x_funcs_.create_sprite(device_, &sprite_);
 
-    if (font_ == NULL) {
+    if (font_ == nullptr) {
         calculate_props();
 
         if (font_height_ > 0) {
@@ -282,7 +282,7 @@ void D3d9Renderer::draw_subtitle()
         }
     }
 
-    if (font_ == NULL)
+    if (font_ == nullptr)
         return;
 
 
@@ -291,7 +291,7 @@ void D3d9Renderer::draw_subtitle()
         last_sub_index_ = Globals::sub_index;
     }
 
-    if (sprite_ != NULL)
+    if (sprite_ != nullptr)
         d3d_result = sprite_->Begin(D3DXSPRITE_ALPHABLEND);
 
     INT text_result = 0;
@@ -299,14 +299,19 @@ void D3d9Renderer::draw_subtitle()
     RECT rect;
 
 
-    int base_x = view_port_.X;
-    int y = view_port_.Y + view_port_.Height - text_height_ - space_after_;
-    const WStringList& lines = subtitle.lines;
+    int base_x = static_cast<int>(view_port_.X);
+
+    int y =
+        static_cast<int>(view_port_.Y) +
+        static_cast<int>(view_port_.Height) -
+        text_height_ - space_after_;
+
+    const auto& lines = subtitle.lines;
 
     for (size_t i = 0; i < line_count; ++i) {
-        const std::wstring& line = lines[i];
-        size_t line_length = line.size();
-        const SIZE& line_size = lines_sizes_[i];
+        const auto& line = lines[i];
+        auto line_length = line.size();
+        const auto& line_size = lines_sizes_[i];
 
         if ((line_length > 0) && ((line_size.cx > 0) && (line_size.cy > 0))) {
             rect.left = base_x + (static_cast<LONG>(view_port_.Width) - line_size.cx) / 2;
@@ -345,30 +350,30 @@ void D3d9Renderer::draw_subtitle()
             y += font_height_;
     }
 
-    if (sprite_ != NULL)
+    if (sprite_ != nullptr)
         d3d_result = sprite_->End();
 }
 
 // (static)
 HRESULT STDMETHODCALLTYPE D3d9Renderer::fake_end_scene(
-    LPDIRECT3DDEVICE9 zis)
+    LPDIRECT3DDEVICE9 self)
 {
-    if (device_ == NULL)
-        device_ = zis;
+    if (device_ == nullptr)
+        device_ = self;
 
     draw_subtitle();
 
-    return detours_.d3dd9_end_scene(zis);
+    return detours_.d3dd9_end_scene(self);
 }
 
 // (static)
 HRESULT STDMETHODCALLTYPE D3d9Renderer::fake_test_cooperative_level(
-    LPDIRECT3DDEVICE9 zis)
+    LPDIRECT3DDEVICE9 self)
 {
-    if (device_ == NULL)
-        device_ = zis;
+    if (device_ == nullptr)
+        device_ = self;
 
-    HRESULT d3d_result = detours_.d3dd9_test_cooperative_level(zis);
+    auto d3d_result = detours_.d3dd9_test_coop_level(self);
 
     switch (d3d_result) {
     case D3D_OK:
@@ -382,10 +387,10 @@ HRESULT STDMETHODCALLTYPE D3d9Renderer::fake_test_cooperative_level(
     }
 
     if (is_device_lost_) {
-        if (font_ != NULL)
+        if (font_ != nullptr)
             font_->OnLostDevice();
 
-        if (sprite_ != NULL)
+        if (sprite_ != nullptr)
             sprite_->OnLostDevice();
     }
 
@@ -394,19 +399,19 @@ HRESULT STDMETHODCALLTYPE D3d9Renderer::fake_test_cooperative_level(
 
 // (static)
 HRESULT STDMETHODCALLTYPE D3d9Renderer::fake_reset(
-    LPDIRECT3DDEVICE9 zis,
+    LPDIRECT3DDEVICE9 self,
     D3DPRESENT_PARAMETERS* presentation_parameters)
 {
-    if (device_ == NULL)
-        device_ = zis;
+    if (device_ == nullptr)
+        device_ = self;
 
-    if (font_ != NULL)
+    if (font_ != nullptr)
         font_->OnResetDevice();
 
-    if (sprite_ != NULL)
+    if (sprite_ != nullptr)
         sprite_->OnResetDevice();
 
-    return detours_.d3dd9_reset(zis, presentation_parameters);
+    return detours_.d3dd9_reset(self, presentation_parameters);
 }
 
 

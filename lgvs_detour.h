@@ -14,38 +14,48 @@
  */
 
 
-#ifndef LGVS_COM_HELPER_H
-#define LGVS_COM_HELPER_H
+#ifndef LGVS_DETOUR_H
+#define LGVS_DETOUR_H
 
 
-#include <unknwn.h>
+#include "lgvs_trampoline_cache.h"
 
 
 namespace lgvs {
 
 
-class ComHelper {
+class Detour {
 public:
-    template<class T>
-    static void release_and_null(T*& object)
-    {
-        if (object == nullptr)
-            return;
+    Detour();
+    ~Detour();
 
-        object->Release();
-        object = nullptr;
-    }
+    bool initialize(
+        void* source_function,
+        void* detour_function,
+        size_t code_size,
+        TrampolineCache* trampoline_cache);
+
+    void uninitialize();
+
+    bool is_initialized() const;
+
+    const void* get_trampoline() const;
 
 
 private:
-    ComHelper();
-    ComHelper(const ComHelper& that);
-    ~ComHelper();
-    ComHelper& operator=(const ComHelper& that);
-}; // class ComHelper
+    bool is_initialized_;
+    void* source_function_;
+    void* detour_function_;
+    void* trampoline_;
+    size_t code_size_;
+    TrampolineCache* trampoline_cache_;
+
+    Detour(const Detour& that);
+    Detour& operator=(const Detour& that);
+}; // class Detour
 
 
 } // namespace lgvs
 
 
-#endif // LGVS_COM_HELPER_H
+#endif // LGVS_DETOUR_H

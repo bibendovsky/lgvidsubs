@@ -32,7 +32,7 @@ const CodeCvt& local8_facet()
 {
     static std::locale local8_locale("");
 
-    static const CodeCvt& result =
+    static const auto& result =
         std::use_facet<CodeCvt>(local8_locale);
 
     return result;
@@ -42,17 +42,20 @@ const WCType& wctype_facet()
 {
     static std::locale locale("");
 
-    static const WCType& result =
+    static const auto& result =
         std::use_facet<WCType>(locale);
 
     return result;
 }
 
 template<class Facet>
-std::wstring& convert_from(std::wstring& string, const char* src_chars,
-    size_type src_length, const Facet& facet)
+std::wstring& convert_from(
+    std::wstring& string,
+    const char* src_chars,
+    size_type src_length,
+    const Facet& facet)
 {
-    const int BUFFER_SIZE = 16;
+    const auto BUFFER_SIZE = 16;
 
     string.clear();
     mbstate_t state = { 0, };
@@ -62,10 +65,16 @@ std::wstring& convert_from(std::wstring& string, const char* src_chars,
 
     const char* i;
     const char* n;
-    
+
     for (i = src_chars, n = i + src_length; i < n; ) {
-        std::codecvt_base::result out_result = facet.in(
-            state, i, n, next1, buffer, buffer + BUFFER_SIZE, next2);
+        auto out_result = facet.in(
+            state,
+            i,
+            n,
+            next1,
+            buffer,
+            buffer + BUFFER_SIZE,
+            next2);
 
         if (out_result != std::codecvt_base::error) {
             i = next1;
@@ -80,8 +89,11 @@ std::wstring& convert_from(std::wstring& string, const char* src_chars,
 }
 
 template<class Facet>
-std::string& convert_to(std::string& string, const wchar_t* src_chars,
-    size_type src_length, const Facet& facet)
+std::string& convert_to(
+    std::string& string,
+    const wchar_t* src_chars,
+    size_type src_length,
+    const Facet& facet)
 {
     const int BUFFER_SIZE = 16;
 
@@ -93,10 +105,16 @@ std::string& convert_to(std::string& string, const wchar_t* src_chars,
 
     const wchar_t* i;
     const wchar_t* n;
-    
+
     for (i = src_chars, n = i + src_length; i < n; ) {
-        std::codecvt_base::result out_result = facet.out(
-            state, i, n, next1, buffer, buffer + BUFFER_SIZE, next2);
+        auto out_result = facet.out(
+            state,
+            i,
+            n,
+            next1,
+            buffer,
+            buffer + BUFFER_SIZE,
+            next2);
 
         if (out_result != std::codecvt_base::error) {
             i = next1;
@@ -146,11 +164,11 @@ std::wstring StringHelper::to_wstring(const std::string& string)
 void StringHelper::copy_w_to_c(const std::wstring& w_string, wchar_t* c_string,
     size_t max_length)
 {
-    if (c_string == NULL)
+    if (c_string == nullptr)
         return;
 
 
-    size_t length = std::min(w_string.size(), max_length);
+    auto length = std::min(w_string.size(), max_length);
 
     std::wstring::traits_type::copy(c_string, w_string.c_str(), length);
 

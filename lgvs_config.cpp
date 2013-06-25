@@ -63,7 +63,7 @@ bool Config::load_from_file(const std::wstring& file_name)
         return false;
 
     for (std::string line; std::getline(stream, line); ) {
-        std::wstring wline = StringHelper::to_wstring(line);
+        auto wline = StringHelper::to_wstring(line);
 
         std::wstring parameter;
         std::wstring value;
@@ -79,8 +79,8 @@ const std::wstring& Config::get_string(
     const std::wstring& key,
     const std::wstring& default_value)
 {
-    std::wstring lkey = StringHelper::to_lower(key);
-    ConfigMapCIt it = config_map_.find(lkey);
+    auto lkey = StringHelper::to_lower(key);
+    auto it = config_map_.find(lkey);
 
     if (it != config_map_.end())
         return it->second;
@@ -101,7 +101,7 @@ float Config::get_float(
     if (!sstream_)
         return default_value;
 
-    wchar_t any_non_space = L'\0';
+    auto any_non_space = L'\0';
     sstream_ >> any_non_space;
 
     if (!sstream_)
@@ -116,7 +116,7 @@ float Config::get_clamped_float(
     float min_value,
     float max_value)
 {
-    float value = get_float(key, default_value);
+    auto value = get_float(key, default_value);
     return Math::clamp(value, min_value, max_value);
 }
 
@@ -128,7 +128,7 @@ float Config::get_percents(
     bool& is_percents)
 {
     is_percents = is_default_percents;
-    float default_result = is_percents ? default_percents : default_value;
+    auto default_result = is_percents ? default_percents : default_value;
 
     sstream_.clear();
     sstream_.str(get_string(key));
@@ -142,7 +142,7 @@ float Config::get_percents(
         return default_result;
 
     // Is there a percent sign?
-    wchar_t percents = L'\0';
+    auto percents = L'\0';
     sstream_ >> percents;
 
     if (!sstream_) {
@@ -157,7 +157,7 @@ float Config::get_percents(
     }
 
     // Is there any non whites pace symbol behind a percents sign?
-    wchar_t any_non_space = L'\0';
+    auto any_non_space = L'\0';
     sstream_ >> any_non_space;
 
     if (!sstream_) {
@@ -181,7 +181,7 @@ float Config::get_clamped_percents(
     bool is_default_percents,
     bool& is_percents)
 {
-    float value = get_percents(
+    auto value = get_percents(
         key,
         default_percents,
         default_value,
@@ -210,13 +210,13 @@ unsigned Config::get_rgba_color(
     if (!sstream_)
         return default_value;
 
-    unsigned r = static_cast<unsigned>(
+    auto r = static_cast<unsigned>(
         255.0F * Math::clamp(color_buffer[0], 0.0F, 1.0F));
-    unsigned g = static_cast<unsigned>(
+    auto g = static_cast<unsigned>(
         255.0F * Math::clamp(color_buffer[1], 0.0F, 1.0F));
-    unsigned b = static_cast<unsigned>(
+    auto b = static_cast<unsigned>(
         255.0F * Math::clamp(color_buffer[2], 0.0F, 1.0F));
-    unsigned a = static_cast<unsigned>(
+    auto a = static_cast<unsigned>(
         255.0F * Math::clamp(color_buffer[3], 0.0F, 1.0F));
 
     return
@@ -238,7 +238,7 @@ bool Config::parse_line(
     size_t end_pos;
     size_t comment_pos;
 
-    static const wchar_t* white_spaces = L" \t\v\f\r\n";
+    static const auto white_spaces = L" \t\v\f\r\n";
 
     parameter.clear();
     value.clear();

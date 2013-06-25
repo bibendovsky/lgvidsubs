@@ -1228,10 +1228,6 @@ retry:
 
 				pOuter->m_pHostIface->BeginVideoFrame(pictq[pictq_rindex].bmp);
 
-                // BBi
-                }
-                // BBi
-
 				// update queue for next picture!
 				if(++pictq_rindex == VIDEO_PICTURE_QUEUE_SIZE) {
 					pictq_rindex = 0;
@@ -1241,10 +1237,6 @@ retry:
 				pictq_size--;
 				SDL_CondSignal(pictq_cond);
 				pictq_mutex.Release();
-
-                // BBi
-                if (!subs.has_subtitles()) {
-                // BBi
 
 				pOuter->m_pHostIface->EndVideoFrame();
 
@@ -2027,15 +2019,27 @@ STDMETHODIMP_(void) cLGVideoDecoder::RequestVideoFrame()
             double pts = is->get_master_clock();
 
             if (is->subs.check_subtitle(pts))
-                is->subs.refresh_video = true;
+                is->subs.refresh_subtitle = true;
         }
 
-        if (is->subs.refresh_video) {
-            is->subs.refresh_video = false;
+        if (is->subs.refresh_video || is->subs.refresh_subtitle) {
+            is->pOuter->m_pHostIface->BeginVideoFrame(is->pictq[is->pictq_rindex].bmp);
 
-            m_pHostIface->BeginVideoFrame(
-                is->pictq[is->pictq_rindex].bmp);
-            m_pHostIface->EndVideoFrame();
+            if (is->subs.refresh_video) {
+                // update queue for next picture!
+                if(++is->pictq_rindex == VIDEO_PICTURE_QUEUE_SIZE)
+                    is->pictq_rindex = 0;
+
+                is->pictq_mutex.Wait();
+                is->pictq_size--;
+                ::SDL_CondSignal(is->pictq_cond);
+                is->pictq_mutex.Release();
+            }
+
+            is->pOuter->m_pHostIface->EndVideoFrame();
+
+            is->subs.refresh_video = false;
+            is->subs.refresh_subtitle = false;
         }
     }
     // BBi

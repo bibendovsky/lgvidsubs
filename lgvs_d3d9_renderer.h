@@ -58,11 +58,11 @@ private:
     static void measure_text();
 
     static HRESULT STDMETHODCALLTYPE fake_end_scene(
-        LPDIRECT3DDEVICE9 zis);
+        LPDIRECT3DDEVICE9 self);
     static HRESULT STDMETHODCALLTYPE fake_test_cooperative_level(
-        LPDIRECT3DDEVICE9 zis);
+        LPDIRECT3DDEVICE9 self);
     static HRESULT STDMETHODCALLTYPE fake_reset(
-        LPDIRECT3DDEVICE9 zis,
+        LPDIRECT3DDEVICE9 self,
         D3DPRESENT_PARAMETERS* presentation_parameters);
 
     D3d9Renderer();

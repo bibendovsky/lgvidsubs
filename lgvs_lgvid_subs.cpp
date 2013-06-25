@@ -32,9 +32,9 @@ const std::wstring LgVidSubs::DEFAULT_FONT_FAMILY = L"Arial";
 
 LgVidSubs::LgVidSubs () :
     refresh_video(false),
-    host_(NULL),
+    refresh_subtitle(false),
+    host_(nullptr),
     config_(),
-    //ss_buffer_(),
     font_filename_(),
     has_subtitles_(false)
 {
@@ -48,7 +48,7 @@ LgVidSubs::~LgVidSubs()
 void LgVidSubs::read_config_values()
 {
     //
-    std::wstring font_family = config_.get_string(L"subs_font_family");
+    auto font_family = config_.get_string(L"subs_font_family");
     if (font_family.empty())
         font_family = L"Arial";
     Globals::font_family = font_family;
@@ -122,12 +122,12 @@ void LgVidSubs::read_config_values()
 WStringList LgVidSubs::read_movie_paths()
 {
     WStringList result;
-    std::wstring cur_dir = System::get_current_dir();
+    auto cur_dir = System::get_current_dir();
 
     if (cur_dir.empty())
         return result;
 
-    std::wstring config_path = System::combine_paths(
+    auto config_path = System::combine_paths(
         cur_dir, L"install.cfg");
 
     std::ifstream stream(config_path.c_str());
@@ -136,10 +136,10 @@ WStringList LgVidSubs::read_movie_paths()
         return result;
 
     std::string line;
-    std::string::size_type movie_path_index = std::string::npos;
+    auto movie_path_index = std::string::npos;
 
     while (std::getline(stream, line)) {
-        std::string::size_type comment_index = line.find_first_of(';');
+        auto comment_index = line.find_first_of(';');
 
         if (comment_index != line.npos)
             line.erase(comment_index);
@@ -153,23 +153,23 @@ WStringList LgVidSubs::read_movie_paths()
     if (movie_path_index == line.npos)
         return result;
 
-    std::string::size_type length = line.size();
-    std::string::size_type path_index = movie_path_index + 10;
+    auto length = line.size();
+    auto path_index = movie_path_index + 10;
 
     for ( ; path_index < length; ++path_index) {
         if (line[path_index] != ' ' && line[path_index] != '\t')
             break;
     }
 
-    std::string::size_type index = path_index;
+    auto index = path_index;
 
     while (index < length) {
-        std::string::size_type plus_index = line.find_first_of('+', index);
+        auto plus_index = line.find_first_of('+', index);
 
         if (plus_index == line.npos)
             plus_index = length;
 
-        std::string::size_type path_length = plus_index - index;
+        auto path_length = plus_index - index;
 
         if (path_length == 0)
             break;
@@ -207,7 +207,7 @@ bool LgVidSubs::check_subtitle(double pts)
 
     int time = static_cast<int>(pts * 1000.0);
 
-    SubtitleListCIt it = std::find_if(
+    auto it = std::find_if(
         Globals::subs.begin(),
         Globals::subs.end(),
         SubtitlePred(time));
@@ -225,30 +225,30 @@ void LgVidSubs::initialize(ILGVideoDecoderHost* host, const char* file_path)
 {
     uninitialize();
 
-    if (host == NULL)
+    if (host == nullptr)
         return;
 
     host_ = host;
 
     print_log("Subtitles Init...");
 
-    if (file_path == NULL) {
-        host_ = NULL;
+    if (file_path == nullptr) {
+        host_ = nullptr;
         print_log("\tNull filename.");
         return;
     }
 
-    std::wstring subs_file_path = StringHelper::to_wstring(file_path);
-    std::wstring subs_file_name = System::extract_file_name(subs_file_path);
-    std::wstring subs_new_file_name = System::change_file_extension(
+    auto subs_file_path = StringHelper::to_wstring(file_path);
+    auto subs_file_name = System::extract_file_name(subs_file_path);
+    auto subs_new_file_name = System::change_file_extension(
         subs_file_name, L".srt");
 
     std::ifstream srt_stream;
-    std::wstring cur_dir = System::get_current_dir();
-    WStringList movie_paths = read_movie_paths();
+    auto cur_dir = System::get_current_dir();
+    auto movie_paths = read_movie_paths();
 
     for (std::wstring::size_type i = 0; i < movie_paths.size(); ++i) {
-        std::wstring subs_tmp_path = System::combine_paths(
+        auto subs_tmp_path = System::combine_paths(
             cur_dir, movie_paths[i], subs_new_file_name);
 
         srt_stream.close();
@@ -264,7 +264,7 @@ void LgVidSubs::initialize(ILGVideoDecoderHost* host, const char* file_path)
     else
         Globals::subs.clear();
 
-    std::wstring config_file_name = System::combine_paths(
+    auto config_file_name = System::combine_paths(
         System::get_current_dir(), L"cam_ext.cfg");
 
     config_.load_from_file(config_file_name);
@@ -276,7 +276,7 @@ void LgVidSubs::initialize(ILGVideoDecoderHost* host, const char* file_path)
 
         if (!font_filename_.empty()) {
             if (::AddFontResourceW(font_filename_.c_str()) == 0) {
-                std::wstring msg = L"\tFailed to register a font: " +
+                auto msg = L"\tFailed to register a font: " +
                     font_filename_ + L".";
                 print_log(msg);
                 font_filename_.clear();
@@ -306,7 +306,7 @@ void LgVidSubs::uninitialize()
 
     refresh_video = false;
 
-    host_ = NULL;
+    host_ = nullptr;
 
     if (!font_filename_.empty()) {
         ::RemoveFontResourceW(font_filename_.c_str());
@@ -323,10 +323,10 @@ bool LgVidSubs::has_subtitles() const
 
 void LgVidSubs::print_log(const char* text)
 {
-    if (host_ == NULL)
+    if (host_ == nullptr)
         return;
 
-    if (text == NULL)
+    if (text == nullptr)
         text = "";
 
     host_->LogPrint(text);
@@ -334,7 +334,7 @@ void LgVidSubs::print_log(const char* text)
 
 void LgVidSubs::print_log(const std::string& text)
 {
-    if (host_ == NULL)
+    if (host_ == nullptr)
         return;
 
     host_->LogPrint(text.c_str());

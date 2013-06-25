@@ -19,8 +19,9 @@
 #include "lgvs_detours.h"
 
 #include <algorithm>
+#include <bitset>
+#include <new>
 
-#include "detours.h"
 #include "lgvs_system.h"
 
 
@@ -30,13 +31,11 @@ namespace lgvs {
 Detours::Detours() :
     is_initialized_(false),
     is_detoured_(false),
-    d3d9_library_(NULL),
-    fake_end_scene_(NULL),
-    real_end_scene_(NULL),
-    fake_test_cooperative_level_(NULL),
-    real_test_cooperative_level_(NULL),
-    fake_reset_(NULL),
-    real_reset_(NULL)
+    d3d9_library_(nullptr),
+    end_scene_detour_(),
+    test_coop_level_detour_(),
+    reset_detour_(),
+    trampoline_cache_()
 {
 }
 
@@ -46,26 +45,26 @@ Detours::~Detours()
 }
 
 bool Detours::initialize(
-    FP_DIRECT3DDEVICE9_ENDSCENE fake_end_scene,
-    FP_DIRECT3DDEVICE9_TESTCOOPERATIVELEVEL fake_test_cooperative_level,
-    FP_DIRECT3DDEVICE9_RESET fake_reset)
+    FP_D3DD9_END_SCENE fake_end_scene,
+    FP_D3DD9_TEST_COOP_LEVEL fake_test_coop_level,
+    FP_D3DD9_END_RESET fake_reset)
 {
     uninitialize();
 
     error_string_.clear();
 
-    if (fake_end_scene == NULL) {
-        error_string_ = L"Null EndScene fake function pointer.";
+    if (fake_end_scene == nullptr) {
+        error_string_ = L"Null \"EndScene\" fake function pointer.";
         return false;
     }
 
-    if (fake_test_cooperative_level == NULL) {
-        error_string_ = L"Null TestCooperativeLevel fake function pointer.";
+    if (fake_test_coop_level == nullptr) {
+        error_string_ = L"Null \"TestCooperativeLevel\" fake function pointer.";
         return false;
     }
 
-    if (fake_reset == NULL) {
-        error_string_ = L"Null Reset fake function pointer.";
+    if (fake_reset == nullptr) {
+        error_string_ = L"Null \"Reset\" fake function pointer.";
         return false;
     }
 
@@ -75,7 +74,7 @@ bool Detours::initialize(
 
     d3d9_library_ = ::LoadLibraryW(d3d9_dll_path.c_str());
 
-    if (d3d9_library_ == NULL) {
+    if (d3d9_library_ == nullptr) {
         error_string_ = L"Failed to load a system Direct3D 9 main library.";
         return false;
     }
@@ -103,7 +102,7 @@ bool Detours::initialize(
     }
 
 
-    HWND dummy_window = NULL;
+    HWND dummy_window = nullptr;
 
     if (is_succeed) {
         dummy_window = ::CreateWindowW(
@@ -112,9 +111,9 @@ bool Detours::initialize(
             WS_OVERLAPPED | WS_CAPTION | WS_CLIPCHILDREN,
             0, 0, 2, 2,
             ::GetDesktopWindow(),
-            NULL, NULL, 0);
+            nullptr, nullptr, 0);
 
-        if (dummy_window == NULL) {
+        if (dummy_window == nullptr) {
             is_succeed = false;
             error_string_ = L"Failed to create a dummy window.";
         }
@@ -122,25 +121,25 @@ bool Detours::initialize(
 
 
     typedef LPDIRECT3D9 (WINAPI* FP_DIRECT3DCREATE9)(UINT SDKVersion);
-    FP_DIRECT3DCREATE9 d3d9_create = NULL;
+    FP_DIRECT3DCREATE9 d3d9_create = nullptr;
 
     if (is_succeed) {
         d3d9_create = reinterpret_cast<FP_DIRECT3DCREATE9>(
             ::GetProcAddress(d3d9_library_, "Direct3DCreate9"));
 
-        if (d3d9_create == NULL) {
+        if (d3d9_create == nullptr) {
             is_succeed = false;
             error_string_ = L"Missing symbol: Direct3DCreate9.";
         }
     }
 
 
-    LPDIRECT3D9 d3d9 = NULL;
+    LPDIRECT3D9 d3d9 = nullptr;
 
     if (is_succeed) {
         d3d9 = d3d9_create(D3D_SDK_VERSION);
 
-        if (d3d9 == NULL) {
+        if (d3d9 == nullptr) {
             is_succeed = false;
             error_string_ = L"Failed to create a Direct3D9 instance.";
         }
@@ -148,7 +147,7 @@ bool Detours::initialize(
 
 
     HRESULT d3d_result = D3D_OK;
-    LPDIRECT3DDEVICE9 d3d_device9 = NULL;
+    LPDIRECT3DDEVICE9 d3d_device9 = nullptr;
 
     if (is_succeed) {
         D3DPRESENT_PARAMETERS pp;
@@ -172,49 +171,47 @@ bool Detours::initialize(
         }
     }
 
-    if (is_succeed) {
-        real_end_scene_ = d3d_device9->lpVtbl->EndScene;
-        real_test_cooperative_level_ = d3d_device9->lpVtbl->TestCooperativeLevel;
-        real_reset_ = d3d_device9->lpVtbl->Reset;
-    }
+    if (is_succeed)
+        is_succeed = trampoline_cache_.initialize(16, 16);
 
     if (is_succeed) {
-        ::DetourTransactionBegin();
-        ::DetourUpdateThread(::GetCurrentThread());
-        ::DetourAttach(
-            reinterpret_cast<PVOID*>(&real_end_scene_),
-            fake_end_scene);
-        ::DetourAttach(
-            reinterpret_cast<PVOID*>(&real_test_cooperative_level_),
-            fake_test_cooperative_level);
-        ::DetourAttach(
-            reinterpret_cast<PVOID*>(&real_reset_),
-            fake_reset);
-        is_detoured_ = (::DetourTransactionCommit() == NO_ERROR);
-        is_succeed = is_detoured_;
+        is_succeed &= end_scene_detour_.initialize(
+            d3d_device9->lpVtbl->EndScene,
+            fake_end_scene,
+            7,
+            &trampoline_cache_);
+
+        is_succeed &= test_coop_level_detour_.initialize(
+            d3d_device9->lpVtbl->TestCooperativeLevel,
+            fake_test_coop_level,
+            5,
+            &trampoline_cache_);
+
+        is_succeed &= reset_detour_.initialize(
+            d3d_device9->lpVtbl->Reset,
+            fake_reset,
+            5,
+            &trampoline_cache_);
 
         if (!is_succeed)
-            error_string_ = L"Failed to detour Direct3D APIs.";
+            error_string_ = L"Failed to detour Direct3D 9 APIs.";
     }
 
-    if (d3d_device9 != NULL)
+    if (d3d_device9 != nullptr)
         IDirect3DDevice9_Release(d3d_device9);
 
-    if (d3d9 != NULL)
+    if (d3d9 != nullptr)
         IDirect3D9_Release(d3d9);
 
-    if (dummy_window != NULL)
+    if (dummy_window != nullptr)
         ::DestroyWindow(dummy_window);
 
     if (dummy_class != 0)
-        ::UnregisterClassW(reinterpret_cast<LPCWSTR>(dummy_class), NULL);
+        ::UnregisterClassW(reinterpret_cast<LPCWSTR>(dummy_class), nullptr);
 
-    if (is_succeed) {
+    if (is_succeed)
         is_initialized_ = true;
-        fake_end_scene_ = fake_end_scene;
-        fake_test_cooperative_level_ = fake_test_cooperative_level;
-        fake_reset_ = fake_reset;
-    } else
+    else
         uninitialize();
 
     return is_succeed;
@@ -224,35 +221,15 @@ void Detours::uninitialize()
 {
     is_initialized_ = false;
 
-    if (is_detoured_) {
-        is_detoured_ = false;
+    end_scene_detour_.uninitialize();
+    test_coop_level_detour_.uninitialize();
+    reset_detour_.uninitialize();
 
-        ::DetourTransactionBegin();
-        ::DetourUpdateThread(::GetCurrentThread());
-        ::DetourDetach(
-            reinterpret_cast<PVOID*>(&real_end_scene_),
-            fake_end_scene_);
-        ::DetourDetach(
-            reinterpret_cast<PVOID*>(&real_test_cooperative_level_),
-            fake_test_cooperative_level_);
-        ::DetourDetach(
-            reinterpret_cast<PVOID*>(&real_reset_),
-            fake_reset_);
-        ::DetourTransactionCommit();
+    trampoline_cache_.uninitialize();
 
-        fake_end_scene_ = NULL;
-        real_end_scene_ = NULL;
-
-        fake_test_cooperative_level_ = NULL;
-        real_test_cooperative_level_ = NULL;
-
-        fake_reset_ = NULL;
-        real_reset_ = NULL;
-    }
-
-    if (d3d9_library_ != NULL) {
+    if (d3d9_library_ != nullptr) {
         ::FreeLibrary(d3d9_library_);
-        d3d9_library_ = NULL;
+        d3d9_library_ = nullptr;
     }
 }
 
@@ -267,22 +244,25 @@ const std::wstring& Detours::get_error_string() const
 }
 
 HRESULT STDMETHODCALLTYPE Detours::d3dd9_end_scene(
-    LPDIRECT3DDEVICE9 zis)
+    LPDIRECT3DDEVICE9 self)
 {
-    return real_end_scene_(zis);
+    return reinterpret_cast<FP_D3DD9_END_SCENE>(
+        end_scene_detour_.get_trampoline())(self);
 }
 
-HRESULT STDMETHODCALLTYPE Detours::d3dd9_test_cooperative_level(
-    LPDIRECT3DDEVICE9 zis)
+HRESULT STDMETHODCALLTYPE Detours::d3dd9_test_coop_level(
+    LPDIRECT3DDEVICE9 self)
 {
-    return real_test_cooperative_level_(zis);
+    return reinterpret_cast<FP_D3DD9_TEST_COOP_LEVEL>(
+        test_coop_level_detour_.get_trampoline())(self);
 }
 
 HRESULT STDMETHODCALLTYPE Detours::d3dd9_reset(
-    LPDIRECT3DDEVICE9 zis,
+    LPDIRECT3DDEVICE9 self,
     D3DPRESENT_PARAMETERS* presentation_parameters)
 {
-    return real_reset_(zis, presentation_parameters);
+    return reinterpret_cast<FP_D3DD9_END_RESET>(
+        reset_detour_.get_trampoline())(self, presentation_parameters);
 }
 
 

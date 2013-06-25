@@ -22,20 +22,22 @@
 
 #include <d3d9.h>
 
+#include "lgvs_detour.h"
+
 
 namespace lgvs {
 
 
 class Detours {
 public:
-    typedef HRESULT (STDMETHODCALLTYPE* FP_DIRECT3DDEVICE9_ENDSCENE)
-        (LPDIRECT3DDEVICE9 zis);
+    typedef HRESULT (STDMETHODCALLTYPE* FP_D3DD9_END_SCENE)
+        (LPDIRECT3DDEVICE9 self);
 
-    typedef HRESULT (STDMETHODCALLTYPE* FP_DIRECT3DDEVICE9_TESTCOOPERATIVELEVEL)
-        (LPDIRECT3DDEVICE9 zis);
+    typedef HRESULT (STDMETHODCALLTYPE* FP_D3DD9_TEST_COOP_LEVEL)
+        (LPDIRECT3DDEVICE9 self);
 
-    typedef HRESULT (STDMETHODCALLTYPE* FP_DIRECT3DDEVICE9_RESET)
-        (LPDIRECT3DDEVICE9 zis,
+    typedef HRESULT (STDMETHODCALLTYPE* FP_D3DD9_END_RESET)
+        (LPDIRECT3DDEVICE9 self,
         D3DPRESENT_PARAMETERS* presentation_parameters);
 
 
@@ -43,9 +45,10 @@ public:
     ~Detours();
 
     bool initialize(
-        FP_DIRECT3DDEVICE9_ENDSCENE fake_end_scene,
-        FP_DIRECT3DDEVICE9_TESTCOOPERATIVELEVEL fake_test_cooperative_level,
-        FP_DIRECT3DDEVICE9_RESET fake_reset);
+        FP_D3DD9_END_SCENE fake_end_scene,
+        FP_D3DD9_TEST_COOP_LEVEL fake_test_coop_level,
+        FP_D3DD9_END_RESET fake_reset);
+
     void uninitialize();
 
     bool is_initialized() const;
@@ -55,7 +58,7 @@ public:
     HRESULT STDMETHODCALLTYPE d3dd9_end_scene(
         LPDIRECT3DDEVICE9 zis);
 
-    HRESULT STDMETHODCALLTYPE d3dd9_test_cooperative_level(
+    HRESULT STDMETHODCALLTYPE d3dd9_test_coop_level(
         LPDIRECT3DDEVICE9 zis);
 
     HRESULT STDMETHODCALLTYPE d3dd9_reset(
@@ -68,15 +71,10 @@ private:
     std::wstring error_string_;
     bool is_detoured_;
     HMODULE d3d9_library_;
-
-    FP_DIRECT3DDEVICE9_ENDSCENE fake_end_scene_;
-    FP_DIRECT3DDEVICE9_ENDSCENE real_end_scene_;
-
-    FP_DIRECT3DDEVICE9_TESTCOOPERATIVELEVEL fake_test_cooperative_level_;
-    FP_DIRECT3DDEVICE9_TESTCOOPERATIVELEVEL real_test_cooperative_level_;
-
-    FP_DIRECT3DDEVICE9_RESET fake_reset_;
-    FP_DIRECT3DDEVICE9_RESET real_reset_;
+    Detour end_scene_detour_;
+    Detour test_coop_level_detour_;
+    Detour reset_detour_;
+    TrampolineCache trampoline_cache_;
 
     Detours(const Detours& that);
     Detours& operator=(const Detours& that);

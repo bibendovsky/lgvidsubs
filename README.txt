@@ -10,13 +10,6 @@ Original link to the NewDark patch:
 http://ariane4ever.free.fr/ariane4ever/viewtopic.php?f=2&t=4287&start=0&st=0&sk=t&sd=a&sid=5fb30e2ac9f6a8491c14c973b7176eb1
 
 
-Used third-party software
--------------------------
-
-Microsoft Research Detours Express
-research.microsoft.com/projects/detours/
-
-
 System requirements
 -------------------
 Same as for the NewDark patch.
@@ -30,17 +23,14 @@ Extract "lgvid.dll" into the game folder.
 Compilation
 -----------
 
-You need Visual Studio to compile the project.
-Supported versions: 2008 (Full/Express), 2012 or higher (Full/Express).
-There are two solutions: a) lgvidsubs.sln and b) lgvidsubsx.sln.
-Use a) for Visual Studio 2008 and b) for the rest.
+You need Visual Studio 2012 or higher to compile the project.
 
 Also, the project depends on the following software:
 a) Microsoft DirectX SDK (June 2010)
    Expected to be installed in
      "c:\Program Files (x86)\Microsoft DirectX SDK (June 2010)\".
-b) Microsoft Research Detours.
-   Read the detours/README.TXT to find out how to compile a library.
+   Download link:
+     http://www.microsoft.com/download/details.aspx?id=6812 
 
 
 Configuration options for "cam_ext.cfg"
@@ -143,6 +133,13 @@ subs_space_after 4.0%
 ==========
 Change log
 ----------
+
+----------
+2013.06.25
+----------
+
+Replaced Microsoft Research Detours with a custom specialized library.
+Moved on to MSVC 2012 EE.
 
 ----------
 2013.06.13

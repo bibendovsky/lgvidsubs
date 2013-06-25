@@ -124,7 +124,7 @@ bool System::is_path_separator(wchar_t ch)
 // (static)
 std::wstring System::extract_file_name(const std::wstring& path)
 {
-    std::wstring::size_type pos = path.find_last_of(L"\\/");
+    auto pos = path.find_last_of(L"\\/");
 
     if (pos != path.npos)
         return path.substr(pos + 1);
@@ -140,7 +140,7 @@ std::wstring System::change_file_extension(
     if (new_extension.size() <= 1)
         return path;
 
-    std::wstring::size_type pos = path.find_last_of(L'.');
+    auto pos = path.find_last_of(L'.');
 
     if (pos != path.npos) {
         std::wstring new_path(path);
@@ -150,6 +150,22 @@ std::wstring System::change_file_extension(
     }
 
     return path;
+}
+
+// (static)
+size_t System::get_page_size()
+{
+    static size_t result = 0;
+
+    if (result != 0)
+        return result;
+
+    SYSTEM_INFO si;
+    ::GetSystemInfo(&si);
+
+    result = si.dwPageSize;
+
+    return result;
 }
 
 
