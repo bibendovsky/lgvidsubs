@@ -23,14 +23,17 @@ Extract "lgvid.dll" into the game folder.
 Compilation
 -----------
 
-You need Visual Studio 2012 or higher to compile the project.
+You need Visual Studio to compile the project.
+Supported versions: 2008 (Full/Express), 2012 or higher (Full/Express).
+There are two solutions: a) lgvidsubs.sln and b) lgvidsubsx.sln.
+Use a) for Visual Studio 2008 and b) for the rest.
 
 Also, the project depends on the following software:
 a) Microsoft DirectX SDK (June 2010)
    Expected to be installed in
      "c:\Program Files (x86)\Microsoft DirectX SDK (June 2010)\".
-   Download link:
-     http://www.microsoft.com/download/details.aspx?id=6812 
+b) Microsoft Research Detours.
+   Read the detours/README.TXT to find out how to compile a library.
 
 
 Configuration options for "cam_ext.cfg"
@@ -135,10 +138,10 @@ Change log
 ----------
 
 ----------
-2013.06.25
+2013.??.??
 ----------
 
-Replaced Microsoft Research Detours with a custom specialized library.
+Replaced Microsoft Research Detours with a custom specialized classes.
 Moved on to MSVC 2012 EE.
 
 ----------

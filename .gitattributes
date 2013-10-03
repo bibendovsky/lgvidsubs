@@ -1,0 +1,5 @@
+* text=auto
+
+*.cpp text
+*.def text
+*.h text

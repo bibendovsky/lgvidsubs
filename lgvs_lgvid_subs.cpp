@@ -244,12 +244,11 @@ void LgVidSubs::initialize(ILGVideoDecoderHost* host, const char* file_path)
         subs_file_name, L".srt");
 
     std::ifstream srt_stream;
-    auto cur_dir = System::get_current_dir();
     auto movie_paths = read_movie_paths();
 
     for (std::wstring::size_type i = 0; i < movie_paths.size(); ++i) {
         auto subs_tmp_path = System::combine_paths(
-            cur_dir, movie_paths[i], subs_new_file_name);
+            movie_paths[i], subs_new_file_name);
 
         srt_stream.close();
         srt_stream.clear();

@@ -21,9 +21,13 @@
 
 
 // load ffmpeg as a DLL
-#ifdef _MSC_VER
+// BBi
+//#ifdef _MSC_VER
+//#define FFMPEG_DLL
+//#endif
+
 #define FFMPEG_DLL
-#endif
+// BBi
 
 
 #define __STDC_CONSTANT_MACROS
