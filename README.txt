@@ -3,7 +3,7 @@ LgVidSubs
 Modified "lgvid" from unofficial NewDark patch
 to support external subtitles in movies.
 
-Link to source code:
+Source code and releases available at
 https://github.com/bibendovsky/lgvidsubs
 
 Original link to the NewDark patch:
@@ -23,17 +23,12 @@ Extract "lgvid.dll" into the game folder.
 Compilation
 -----------
 
-You need Visual Studio to compile the project.
-Supported versions: 2008 (Full/Express), 2012 or higher (Full/Express).
-There are two solutions: a) lgvidsubs.sln and b) lgvidsubsx.sln.
-Use a) for Visual Studio 2008 and b) for the rest.
+You need Visual Studio 2012 or higher (express/full)
+to compile the project.
 
-Also, the project depends on the following software:
-a) Microsoft DirectX SDK (June 2010)
-   Expected to be installed in
-     "c:\Program Files (x86)\Microsoft DirectX SDK (June 2010)\".
-b) Microsoft Research Detours.
-   Read the detours/README.TXT to find out how to compile a library.
+Also, the project depends on the Microsoft DirectX SDK (June 2010)
+Expected to be installed in
+  "c:\Program Files (x86)\Microsoft DirectX SDK (June 2010)\".
 
 
 Configuration options for "cam_ext.cfg"
@@ -78,7 +73,7 @@ Some useful values:
 700 - bold.
 
 (See LOGFONT structure in MSDN for more info.)
-
+(http://msdn.microsoft.com/en-us/library/windows/desktop/dd145037%28v=vs.85%29.aspx)
 
 
 subs_font_color <r> <g> <b> <a>
@@ -130,95 +125,3 @@ subs_shadow_color 0.0 0.0 0.0 0.7
 subs_shadow_offset_x 2
 subs_shadow_offset_y 1
 subs_space_after 4.0%
-
-
-
-==========
-Change log
-----------
-
-----------
-2013.??.??
-----------
-
-Replaced Microsoft Research Detours with a custom specialized classes.
-Moved on to MSVC 2012 EE.
-
-----------
-2013.06.13
-----------
-
-Integrated Direct3D wrapper into lgvid.dll.
-Removed unused Direct3D wrapper's files.
-Removed useless subtitle sorting from previous release.
-Wrote a separate config (cam_ext.cfg) reader to avoid issues
-  with parameters which contains a word 'shadow'.
-
-----------
-2013.06.01
-----------
-
-Fixed detection of lines with white spaces only.
-Now using parameter "movie_path" from "install.cfg" to search subtitle files.
-Now using master clock for subtitle events.
-Subtitle entries can be unsorted in subtitle file.
-Added solution and project files for Visual Studio 2012.
-Refactored code:
-  - minimized changes in the main source file (lgvid.cpp).
-  - changed d3d wrapper's shared data to regular calls.
-  - renamed namespace / wrapper's classes, etc.
-  - renamed all source files (except original).
-  - added license plate to every file (except original).
-Added missing header file "libavutil/error.h" from modified FFMpeg library.
-Changed CRT library from dynamic to static to avoid DLL version mess.
-
-----------
-2013.03.27
-----------
-
-Changed bindings of binaries to Visual C++ 2008 Redistributable 9.0.30729.1,
-as did in New Dark Engine 1.21.
-
-----------
-2013.03.18
-----------
-
-Reverted to VC2008. Updated according new relase of New Dark Engine 1.20.
-
-----------
-2013.02.05
-----------
-
-Added new configuration option - "subs_font_filename".
-Moved back to MSVC 2010 EE.
-Removed MinGW workarounds for string conversion (char -> wchar_t).
-Updated FFmpeg to version 1.1.1.
-
-
-----------
-2013.01.11
-----------
-
-Integrated FFmpeg (v1.1) into the lgvid.dll.
-Minor code changes for compiling lgvid.dll with MinGW.
-
-
-----------
-2012.11.15
-----------
-
-Moved on to MSVC 2010 EE.
-Replaced a GDI rendering with a Direct3D 9 (via wrapper dll) one.
-Added new configuration options to "cam_ext.cfg".
-
-
-----------
-2012.11.09
-----------
-
-Added very basic support for .srt subtitles:
-  - text in OEM encoding;
-  - blank line tag (\n).
-
-Subtitles renders on original frame picture.
-No (yet) options for font parameters (family, size, etc.).
