@@ -16,6 +16,7 @@
 
 #include "lgvs_string_helper.h"
 
+#include <algorithm>
 #include <locale>
 #include <memory>
 
