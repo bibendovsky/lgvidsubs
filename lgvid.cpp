@@ -22,6 +22,7 @@
 
 #include <cassert>
 #include <algorithm>
+#include <condition_variable>
 #include <mutex>
 #include <thread>
 #include <vector>
@@ -231,23 +232,6 @@ namespace FFmpeg {
 ///////////////////////////////////////////////////////////////////////////////
 // Thread Utilities
 
-class cThreadSyncObject {
-public:
-    ~cThreadSyncObject() { if (m_hSyncObject) CloseHandle(m_hSyncObject); }
-    BOOL operator!() const { return !m_hSyncObject; }
-    operator HANDLE () { return m_hSyncObject; }
-    BOOL Wait(DWORD dwTimeout = INFINITE) { return WaitForSingleObject(m_hSyncObject, dwTimeout) == WAIT_OBJECT_0; }
-protected:
-    cThreadSyncObject() : m_hSyncObject(NULL) {}
-    HANDLE m_hSyncObject;
-};
-
-class cThreadSemaphore : public cThreadSyncObject {
-public:
-    cThreadSemaphore(long initialValue, long maxValue) { m_hSyncObject = CreateSemaphore(NULL, initialValue, maxValue, NULL); }
-    BOOL Release(long releaseCount = 1, long * pPreviousCount = NULL) { return ReleaseSemaphore(m_hSyncObject, releaseCount, pPreviousCount); }
-};
-
 class WorkerThread {
 public:
     WorkerThread() :
@@ -299,79 +283,6 @@ private:
     std::thread* thread_;
 };
 
-///////////////////////////////////////////////////////////////////////////////
-// SDL_Cond
-
-struct SDL_cond {
-    std::mutex lock;
-
-    int waiting;
-    int signals;
-    cThreadSemaphore wait_sem;
-    cThreadSemaphore wait_done;
-
-    SDL_cond() : wait_sem(0, 32 * 1024), wait_done(0, 32 * 1024)
-    {
-        waiting = signals = 0;
-    }
-};
-
-
-int SDL_CondSignal(SDL_cond &cond)
-{
-    cond.lock.lock();
-
-    if (cond.waiting > cond.signals) {
-        ++cond.signals;
-        cond.wait_sem.Release();
-        cond.lock.unlock();
-        cond.wait_done.Wait();
-    } else {
-        cond.lock.unlock();
-    }
-
-    return 0;
-}
-
-int SDL_CondWaitTimeout(
-    SDL_cond& cond,
-    std::mutex& mutex,
-    uint32 ms)
-{
-    int retval;
-
-    cond.lock.lock();
-    ++cond.waiting;
-    cond.lock.unlock();
-
-    mutex.unlock();
-
-    retval = !cond.wait_sem.Wait(ms);
-
-    cond.lock.lock();
-
-    if (cond.signals > 0) {
-        if (retval > 0)
-            cond.wait_sem.Wait();
-        cond.wait_done.Release();
-        --cond.signals;
-    }
-
-    --cond.waiting;
-    cond.lock.unlock();
-
-    mutex.lock();
-
-    return retval;
-}
-
-inline int SDL_CondWait(
-    SDL_cond& cond,
-    std::mutex& mutex)
-{
-    return SDL_CondWaitTimeout(cond, mutex, ~0U);
-}
-
 
 ///////////////////////////////////////////////////////////////////////////////
 //
@@ -390,7 +301,7 @@ struct PacketQueue {
     int nb_packets;
     int size;
     std::mutex mutex;
-    SDL_cond cond;
+    std::condition_variable cond;
 
     int Put(AVPacket *pkt)
     {
@@ -417,7 +328,7 @@ struct PacketQueue {
         nb_packets++;
         size += pkt1->pkt.size + sizeof(*pkt1);
 
-        SDL_CondSignal(cond);
+        cond.notify_one();
 
         mutex.unlock();
         return 0;
@@ -428,7 +339,7 @@ struct PacketQueue {
         AVPacketList *pkt1;
         int ret;
 
-        mutex.lock();
+        std::unique_lock<std::mutex> locked_mutex(mutex);
 
         for (;;) {
             if (quit) {
@@ -457,10 +368,9 @@ struct PacketQueue {
                     break;
                 }
 
-                SDL_CondWait(cond, mutex);
+                cond.wait(locked_mutex);
             }
         }
-        mutex.unlock();
         return ret;
     }
 
@@ -486,7 +396,7 @@ struct PacketQueue {
         mutex.lock();
         quit = ret;
 
-        SDL_CondSignal(cond);
+        cond.notify_one();
 
         mutex.unlock();
     }
@@ -496,7 +406,7 @@ struct PacketQueue {
         mutex.lock();
         finished = ret;
 
-        SDL_CondSignal(cond);
+        cond.notify_one();
 
         mutex.unlock();
     }
@@ -507,7 +417,7 @@ struct PacketQueue {
 
         finished = 1;
         if (!first_pkt)
-            SDL_CondSignal(cond);
+            cond.notify_one();
 
         mutex.unlock();
     }
@@ -576,7 +486,7 @@ struct VideoState {
     VideoPicture    pictq[VIDEO_PICTURE_QUEUE_SIZE];
     int             pictq_size, pictq_rindex, pictq_windex;
     std::mutex pictq_mutex;
-    SDL_cond        pictq_cond;
+    std::condition_variable pictq_cond;
     class DecodeThread     *parse_tid;
     class VideoThread      *video_tid;
     int             quit;
@@ -866,7 +776,7 @@ struct VideoState {
 
                         pictq_mutex.lock();
                         pictq_size--;
-                        SDL_CondSignal(pictq_cond);
+                        pictq_cond.notify_one();
                         pictq_mutex.unlock();
                         goto retry;
                     }
@@ -887,7 +797,7 @@ struct VideoState {
 
                     pictq_mutex.lock();
                     pictq_size--;
-                    SDL_CondSignal(pictq_cond);
+                    pictq_cond.notify_one();
                     pictq_mutex.unlock();
 
                     pOuter->m_pHostIface->EndVideoFrame();
@@ -1376,13 +1286,20 @@ private:
         VideoState::VideoPicture *vp;
 
         // wait until we have space for a new pic
-        is->pictq_mutex.lock();
-        if (is->pictq_size >= VIDEO_PICTURE_QUEUE_SIZE && !is->refresh)
-            is->skip_frames = std::max(1.0F - FRAME_SKIP_FACTOR, is->skip_frames * (1.0F - FRAME_SKIP_FACTOR));
-        while (is->pictq_size >= VIDEO_PICTURE_QUEUE_SIZE &&	!is->quit) {
-            SDL_CondWait(is->pictq_cond, is->pictq_mutex);
+        {
+            std::unique_lock<std::mutex> locked_mutex(is->pictq_mutex);
+
+            if (is->pictq_size >= VIDEO_PICTURE_QUEUE_SIZE && !is->refresh) {
+                is->skip_frames = std::max(
+                    1.0F - FRAME_SKIP_FACTOR,
+                    is->skip_frames * (1.0F - FRAME_SKIP_FACTOR));
+            }
+
+            is->pictq_cond.wait(locked_mutex, [this] () {
+                return !(is->pictq_size >= VIDEO_PICTURE_QUEUE_SIZE &&
+                    !is->quit);
+            });
         }
-        is->pictq_mutex.unlock();
 
         if (is->quit)
             return -1;
@@ -1561,7 +1478,7 @@ void VideoState::Stop()
     videoq.Quit();
     audioq.Quit();
 
-    SDL_CondSignal(pictq_cond);
+    pictq_cond.notify_one();
 
     if (video_tid)
         video_tid->wait_for_close();
@@ -1657,7 +1574,7 @@ STDMETHODIMP_(void) cLGVideoDecoder::RequestVideoFrame()
 
                 is->pictq_mutex.lock();
                 is->pictq_size--;
-                ::SDL_CondSignal(is->pictq_cond);
+                is->pictq_cond.notify_one();
                 is->pictq_mutex.unlock();
             }
 
