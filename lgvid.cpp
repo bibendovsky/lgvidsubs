@@ -57,26 +57,18 @@ extern "C" {
 #endif
 
 
-typedef unsigned char uint8;
-typedef unsigned int uint32;
 typedef unsigned long ulong;
-#ifndef QWORD
-typedef unsigned long long QWORD;
-#endif
 
 
-#define AUDIO_BUFFER_SIZE (16 * 1024)
-#define MIN_AUDIOQ_SIZE (20 * 16 * 1024)
-#define MIN_FRAMES (5)
-#define AV_SYNC_THRESHOLD (0.01)
-#define AV_NOSYNC_THRESHOLD (10.0)
-#define SAMPLE_CORRECTION_PERCENT_MAX (10)
-#define AUDIO_DIFF_AVG_NB (20)
-#define FF_ALLOC_EVENT (SDL_USEREVENT)
-#define FF_REFRESH_EVENT (SDL_USEREVENT + 1)
-#define FF_QUIT_EVENT (SDL_USEREVENT + 2)
-#define VIDEO_PICTURE_QUEUE_SIZE (2)
-#define DEFAULT_AV_SYNC_TYPE AV_SYNC_EXTERNAL_MASTER
+const int  AUDIO_BUFFER_SIZE = 16 * 1024;
+const int MIN_AUDIOQ_SIZE = 20 * 16 * 1024;
+const int MIN_FRAMES = 5;
+const double AV_SYNC_THRESHOLD = 0.01;
+const double AV_NOSYNC_THRESHOLD = 10.0;
+const int SAMPLE_CORRECTION_PERCENT_MAX = 10;
+const int AUDIO_DIFF_AVG_NB = 20;
+const int VIDEO_PICTURE_QUEUE_SIZE = 2;
+//#define DEFAULT_AV_SYNC_TYPE AV_SYNC_EXTERNAL_MASTER
 
 static int sws_flags = SWS_BICUBIC;
 
@@ -124,7 +116,7 @@ public:
 //
 
 namespace FFmpeg {
-    cLGVideoDecoder *pOuter = NULL;
+    cLGVideoDecoder *pOuter = nullptr;
 
     static void mprintf(const char *fmt, ...)
     {
@@ -142,7 +134,7 @@ namespace FFmpeg {
 
     void Shutdown()
     {
-        pOuter = NULL;
+        pOuter = nullptr;
     }
 
     BOOL Init(cLGVideoDecoder *pOuter_)
@@ -171,7 +163,7 @@ namespace FFmpeg {
     static int64_t Seek(void *opaque, int64_t offset, int whence)
     {
         IOContext *io = (IOContext*) opaque;
-        return (whence == AVSEEK_SIZE) ? (QWORD) io->size : pOuter->m_pHostIface->FileSeek(io->pStream, static_cast<long>(offset), whence);
+        return (whence == AVSEEK_SIZE) ? (uint64_t) io->size : pOuter->m_pHostIface->FileSeek(io->pStream, static_cast<long>(offset), whence);
     }
 
 
@@ -187,7 +179,7 @@ namespace FFmpeg {
 
         IOContext *ctxt = new IOContext(pStream);
 
-        AVIOContext *pb = avio_alloc_context(NULL, 0, 0, ctxt, Read, NULL/*Write*/, Seek);
+        AVIOContext *pb = avio_alloc_context(nullptr, 0, 0, ctxt, Read, nullptr/*Write*/, Seek);
 
         (*ic_ptr)->pb = pb;
         ret = avformat_open_input(ic_ptr, filename, nullptr, nullptr);
@@ -203,7 +195,7 @@ namespace FFmpeg {
 
     void CloseFile(AVFormatContext *s)
     {
-        Assert_(s != NULL);
+        Assert_(s != nullptr);
 
         AVIOContext *pb = s->pb;
 
@@ -215,7 +207,7 @@ namespace FFmpeg {
                     pOuter->m_pHostIface->FileClose(io->pStream);
 
                 delete io;
-                pb->opaque = NULL;
+                pb->opaque = nullptr;
             }
 
             av_free(pb);
@@ -316,7 +308,7 @@ struct PacketQueue {
         if (!pkt1)
             return -1;
         pkt1->pkt = *pkt;
-        pkt1->next = NULL;
+        pkt1->next = nullptr;
 
         mutex.lock();
 
@@ -351,7 +343,7 @@ struct PacketQueue {
             if (pkt1) {
                 first_pkt = pkt1->next;
                 if (!first_pkt)
-                    last_pkt = NULL;
+                    last_pkt = nullptr;
                 nb_packets--;
                 size -= pkt1->pkt.size + sizeof(*pkt1);
                 *pkt = pkt1->pkt;
@@ -379,13 +371,13 @@ struct PacketQueue {
         AVPacketList *pkt, *pkt1;
 
         mutex.lock();
-        for (pkt = first_pkt; pkt != NULL; pkt = pkt1) {
+        for (pkt = first_pkt; pkt != nullptr; pkt = pkt1) {
             pkt1 = pkt->next;
             av_free_packet(&pkt->pkt);
             av_freep(&pkt);
         }
-        last_pkt = NULL;
-        first_pkt = NULL;
+        last_pkt = nullptr;
+        first_pkt = nullptr;
         nb_packets = 0;
         size = 0;
         mutex.unlock();
@@ -444,6 +436,7 @@ struct VideoState {
         AV_SYNC_AUDIO_MASTER,
         AV_SYNC_VIDEO_MASTER,
         AV_SYNC_EXTERNAL_MASTER,
+        AV_SYNC_DEFAULT = AV_SYNC_EXTERNAL_MASTER
     };
 
     cLGVideoDecoder *pOuter;
@@ -509,7 +502,7 @@ struct VideoState {
         pFormatCtx(),
         videoStream(-1),
         audioStream(-1),
-        av_sync_type(DEFAULT_AV_SYNC_TYPE),
+        av_sync_type(AV_SYNC_DEFAULT),
         external_clock(),
         external_clock_time(),
         audio_clock(),
@@ -660,8 +653,8 @@ struct VideoState {
         for (unsigned int i = 0; i < pFormatCtx->nb_streams; i++)
             pFormatCtx->streams[i]->discard = AVDISCARD_ALL;
 
-        st_index[AVMEDIA_TYPE_VIDEO] = av_find_best_stream(pFormatCtx, AVMEDIA_TYPE_VIDEO, -1, -1, NULL, 0);
-        st_index[AVMEDIA_TYPE_AUDIO] = av_find_best_stream(pFormatCtx, AVMEDIA_TYPE_AUDIO, -1, st_index[AVMEDIA_TYPE_VIDEO], NULL, 0);
+        st_index[AVMEDIA_TYPE_VIDEO] = av_find_best_stream(pFormatCtx, AVMEDIA_TYPE_VIDEO, -1, -1, nullptr, 0);
+        st_index[AVMEDIA_TYPE_AUDIO] = av_find_best_stream(pFormatCtx, AVMEDIA_TYPE_AUDIO, -1, st_index[AVMEDIA_TYPE_VIDEO], nullptr, 0);
 
         // Open streams
 
@@ -708,23 +701,23 @@ struct VideoState {
         // Close the codec
         if (video_st)
             avcodec_close(video_st->codec);
-        video_st = NULL;
+        video_st = nullptr;
 
         if (audio_st)
             avcodec_close(audio_st->codec);
-        audio_st = NULL;
+        audio_st = nullptr;
 
         // Close the video file
         if (pFormatCtx)
             FFmpeg::CloseFile(pFormatCtx);
-        pFormatCtx = NULL;
+        pFormatCtx = nullptr;
 
         if (img_convert_ctx)
             sws_freeContext(img_convert_ctx);
-        img_convert_ctx = NULL;
+        img_convert_ctx = nullptr;
 
         for (int i = 0; i < VIDEO_PICTURE_QUEUE_SIZE; ++i)
-            pictq[i].bmp = NULL;
+            pictq[i].bmp = nullptr;
     }
 
     BOOL Play();
@@ -1321,13 +1314,13 @@ private:
         ILGVideoDecoderHost::sFrameFormat fmt;
         is->pOuter->m_pHostIface->GetFrameFormat(fmt);
 
-        uint8 *data[] = { (uint8*) lock.buffer, NULL, NULL };
+        uint8_t *data[] = { (uint8_t*) lock.buffer, nullptr, nullptr };
         int stride[] = { lock.pitch, 0, 0 };
 
         is->img_convert_ctx = sws_getCachedContext(is->img_convert_ctx,
             is->video_st->codec->width, is->video_st->codec->height, is->video_st->codec->pix_fmt,
             fmt.width, fmt.height, is->pict_pix_fmt,
-            sws_flags, NULL, NULL, NULL);
+            sws_flags, nullptr, nullptr, nullptr);
 
         sws_scale(is->img_convert_ctx, pFrame->data,
             pFrame->linesize, 0,
@@ -1408,7 +1401,7 @@ BOOL VideoState::Play()
     skip_frames = 0;
     skip_frames_index = 0;
 
-    Assert_(video_tid == NULL);
+    Assert_(video_tid == nullptr);
     video_tid = new VideoThread(this);
     if (!video_tid->create()) {
         AssertMsg(FALSE, "VideoThread::Create");
@@ -1416,7 +1409,7 @@ BOOL VideoState::Play()
 
     schedule_refresh(40);
 
-    Assert_(parse_tid == NULL);
+    Assert_(parse_tid == nullptr);
     parse_tid = new DecodeThread(this);
     if (!parse_tid->create()) {
         AssertMsg(FALSE, "DecodeThread::Create");
@@ -1443,7 +1436,7 @@ int VideoState::stream_component_open(int stream_index)
     codecCtx->debug = FF_DEBUG_BUGS |/*FF_DEBUG_VIS_MB_TYPE|*/FF_DEBUG_ER |/*FF_DEBUG_SKIP|FF_DEBUG_PICT_INFO|*/FF_DEBUG_PTS;
 #endif
 
-    if (!codec || (avcodec_open2(codecCtx, codec, NULL) < 0)) {
+    if (!codec || (avcodec_open2(codecCtx, codec, nullptr) < 0)) {
         AssertMsg(FALSE, "Unsupported codec!\n");
         return -1;
     }
@@ -1506,7 +1499,7 @@ void VideoState::Stop()
 
 cLGVideoDecoder::cLGVideoDecoder(ILGVideoDecoderHost *pHostIface)
 : m_pHostIface(pHostIface),
-is(NULL)
+is(nullptr)
 {
 }
 
@@ -1526,7 +1519,7 @@ STDMETHODIMP_(BOOL) cLGVideoDecoder::Start()
     if (!is)
         return FALSE;
 
-    is->av_sync_type = VideoState::DEFAULT_AV_SYNC_TYPE;
+    is->av_sync_type = VideoState::AV_SYNC_DEFAULT;
 
     return is->Play();
 }
@@ -1563,7 +1556,7 @@ STDMETHODIMP_(void) cLGVideoDecoder::RequestVideoFrame()
     }
 
     // BBi
-    if (is != NULL && is->subs.has_subtitles()) {
+    if (is != nullptr && is->subs.has_subtitles()) {
         if (is->audio_finished == 0 || is->video_finished == 0) {
             double pts = is->get_master_clock();
 
@@ -1609,7 +1602,7 @@ void cLGVideoDecoder::Stop()
         is->Close();
 
         delete is;
-        is = NULL;
+        is = nullptr;
     }
 
     FFmpeg::Shutdown();
@@ -1704,13 +1697,13 @@ BOOL cLGVideoDecoder::Init(const char *filename)
 extern "C" ILGVideoDecoder* CreateLGVideoDecoder(ILGVideoDecoderHost *pHostIface, const char *filename)
 {
     if (!pHostIface || !filename)
-        return NULL;
+        return nullptr;
 
     cLGVideoDecoder *p = new cLGVideoDecoder(pHostIface);
 
     if (!p->Init(filename)) {
         delete p;
-        return NULL;
+        return nullptr;
     }
 
     return p;
