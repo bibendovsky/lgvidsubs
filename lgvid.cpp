@@ -22,16 +22,19 @@
 
 // load ffmpeg as a DLL
 // BBi
-//#ifdef _MSC_VER
-//#define FFMPEG_DLL
-//#endif
-
+#if 0
+#ifdef _MSC_VER
 #define FFMPEG_DLL
+#endif
+#endif // 0
 // BBi
 
 
 #define __STDC_CONSTANT_MACROS
 
+#include <cassert>
+#include <algorithm>
+#include <vector>
 #include <windows.h>
 #include <process.h>
 #include <sys/types.h>
@@ -39,12 +42,23 @@
 
 extern "C"
 {
+// BBi
+#if 0
 #pragma pack(8) // must have same aligment as the ffmpeg libs
+#endif // 0
+
 #include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>
+#include <libswresample/swresample.h>
 #include <libswscale/swscale.h>
+#include <libavutil/time.h>
+#include <libavutil/opt.h>
+
+// BBi
+#if 0
 #include <libavcodec/audioconvert.h>
 #pragma pack()
+#endif // 0
 }
 
 #include "lgviddecoder.h"
@@ -139,6 +153,7 @@ public:
 
 namespace FFmpeg
 {
+#if 0
 	void* (*av_malloc)(FF_INTERNAL_MEM_TYPE size);
 	void (*av_freep)(void *ptr);
 	int64_t (*av_gettime)(void);
@@ -186,14 +201,18 @@ namespace FFmpeg
 	struct SwsContext* (*sws_getCachedContext)(struct SwsContext *context, int srcW, int srcH, enum PixelFormat srcFormat, int dstW, int dstH, enum PixelFormat dstFormat, int flags, SwsFilter *srcFilter, SwsFilter *dstFilter, const double *param);
 
 	AVIOContext* (*avio_alloc_context)(unsigned char *buffer, int buffer_size, int write_flag, void *opaque, int (*read_packet)(void *opaque, uint8_t *buf, int buf_size), int (*write_packet)(void *opaque, uint8_t *buf, int buf_size), int64_t (*seek)(void *opaque, int64_t offset, int whence));
+#endif // 0
 
+#if 0
 	//
 
 #ifdef FFMPEG_DLL
 	HMODULE hDll = NULL;
 #endif
+#endif // 0
 	cLGVideoDecoder *pOuter = NULL;
 
+#if 0
 	//
 
 #ifdef FFMPEG_DLL
@@ -209,6 +228,7 @@ namespace FFmpeg
 	#define INIT_FF_CALL(_name) _name = :: _name;
 	#define INIT_FF_CALL_OPT(_name) _name = :: _name;
 #endif
+#endif // 0
 
 	static void mprintf(const char *fmt, ...)
 	{
@@ -246,6 +266,7 @@ namespace FFmpeg
 
 	void Shutdown()
 	{
+#if 0
 #ifdef FFMPEG_DLL
 		if (hDll)
 		{
@@ -256,6 +277,7 @@ namespace FFmpeg
 			}
 		}
 #endif
+#endif // 0
 
 		pOuter = NULL;
 	}
@@ -264,6 +286,7 @@ namespace FFmpeg
 	{
 		pOuter = pOuter_;
 
+#if 0
 #ifdef FFMPEG_DLL
 		if (hDll)
 		{
@@ -338,9 +361,11 @@ namespace FFmpeg
 			av_log_set_level(99);
 		}
 #endif
+#endif // 0
 
 		return TRUE;
 
+#if 0
 #ifdef FFMPEG_DLL
 fail:
 		mprintf("WARNING: cannot play movie, wrong version of \"ffmpeg.dll\"");
@@ -349,6 +374,7 @@ fail:
 
 		return FALSE;
 #endif
+#endif // 0
 	}
 
 	//
@@ -372,11 +398,15 @@ fail:
 	static int64_t Seek(void *opaque, int64_t offset, int whence)
 	{
 		IOContext *io = (IOContext*)opaque;
-		return (whence == AVSEEK_SIZE) ? (QWORD)io->size : pOuter->m_pHostIface->FileSeek(io->pStream, offset, whence);
+		return (whence == AVSEEK_SIZE) ? (QWORD)io->size : pOuter->m_pHostIface->FileSeek(io->pStream, static_cast<long>(offset), whence);
 	}
 
 
+#if 0
 	int OpenFile(AVFormatContext **ic_ptr, const char *filename, AVInputFormat *fmt, int buf_size, AVFormatParameters *ap)
+#else
+    int OpenFile(AVFormatContext **ic_ptr, const char *filename)
+#endif // 0
 	{
 		//return av_open_input_file(ic_ptr, filename, fmt, buf_size, ap);
 
@@ -393,6 +423,7 @@ fail:
 
 		AVIOContext *pb = avio_alloc_context(NULL, 0, 0, ctxt, Read, NULL/*Write*/, Seek);
 
+#if 0
 		if (!fmt)
 		{
 			// determine format
@@ -405,8 +436,14 @@ fail:
 				goto fail;
 			}
 		}
+#endif // 0
 
+#if 0
 		ret = av_open_input_stream(ic_ptr, pb, filename, fmt, ap);
+#else
+        (*ic_ptr)->pb = pb;
+        ret = avformat_open_input(ic_ptr, filename, nullptr, nullptr);
+#endif // 0
 
 		if (ret)
 		{
@@ -427,7 +464,9 @@ fail:
 
 		AVIOContext *pb = s->pb;
 
+#if 0
 		av_close_input_stream(s);
+#endif // 0
 
 		if (pb)
 		{
@@ -444,6 +483,8 @@ fail:
 
 			av_free(pb);
 		}
+
+        avformat_close_input(&s);
 	}
 };
 
@@ -562,7 +603,7 @@ protected:
 	virtual DWORD ThreadProc() = 0;
 	cThreadLock m_Lock;
 private:
-	DWORD Call(DWORD dwParam, BOOL fBoostPriority)
+	HRESULT Call(DWORD dwParam, BOOL fBoostPriority)
 	{
 		AssertMsg(!m_EventSend.Check(), "nested inter-thread call");
 		cAutoLock lock(m_Lock);
@@ -661,7 +702,7 @@ int SDL_CondWaitTimeout(SDL_cond &cond, cThreadMutex &mutex, uint32 ms)
 
 inline int SDL_CondWait(SDL_cond &cond, cThreadMutex &mutex)
 {
-	return SDL_CondWaitTimeout(cond, mutex, ~0);
+	return SDL_CondWaitTimeout(cond, mutex, ~0U);
 }
 
 
@@ -690,11 +731,11 @@ struct PacketQueue
 		Assert_(!finished && !quit);
 
 		AVPacketList *pkt1;
-		if(FFmpeg::av_dup_packet(pkt) < 0) {
+		if(av_dup_packet(pkt) < 0) {
 			return -1;
 		}
 
-		pkt1 = (AVPacketList*)FFmpeg::av_malloc(sizeof(AVPacketList));
+		pkt1 = (AVPacketList*)av_malloc(sizeof(AVPacketList));
 		if (!pkt1)
 			return -1;
 		pkt1->pkt = *pkt;
@@ -737,7 +778,7 @@ struct PacketQueue
 				nb_packets--;
 				size -= pkt1->pkt.size + sizeof(*pkt1);
 				*pkt = pkt1->pkt;
-				FFmpeg::av_free(pkt1);
+				av_free(pkt1);
 				ret = 1;
 				break;
 			} else if (!block) {
@@ -764,8 +805,8 @@ struct PacketQueue
 		mutex.Wait();
 		for(pkt = first_pkt; pkt != NULL; pkt = pkt1) {
 			pkt1 = pkt->next;
-			FFmpeg::av_free_packet(&pkt->pkt);
-			FFmpeg::av_freep(&pkt);
+			av_free_packet(&pkt->pkt);
+			av_freep(&pkt);
 		}
 		last_pkt = NULL;
 		first_pkt = NULL;
@@ -846,15 +887,24 @@ struct VideoState
 	double          audio_clock;
 	AVStream        *audio_st;
 	PacketQueue     audioq;
+#if 0
 	DECLARE_ALIGNED(16, uint8_t, audio_buf1[(AVCODEC_MAX_AUDIO_FRAME_SIZE * 3) / 2]);
 	DECLARE_ALIGNED(16, uint8_t, audio_buf2[(AVCODEC_MAX_AUDIO_FRAME_SIZE * 3) / 2]);
+#else
+    AVFrame* audio_frame;
+    std::vector<uint8_t> avr_buffer;
+#endif // 0
 	uint8_t         *audio_buf;
 	unsigned int    audio_buf_size;
 	unsigned int    audio_buf_index;
 	AVPacket        audio_pkt;
 	AVPacket        audio_pkt2;
     AVSampleFormat  audio_src_fmt;
+#if 0
     AVAudioConvert  *reformat_ctx;
+#else
+    SwrContext* avr_context;
+#endif // 0
 	double          audio_diff_cum; /* used for AV difference average computation */
 	double          audio_diff_avg_coef;
 	double          audio_diff_threshold;
@@ -906,42 +956,46 @@ struct VideoState
 		audio_buf_size(0),
 		audio_buf_index(0),
 		audio_src_fmt(AV_SAMPLE_FMT_NONE),
-		reformat_ctx(NULL),
-		audio_diff_cum(0),
-		audio_diff_avg_coef(0),
-		audio_diff_threshold(0),
-		audio_diff_avg_count(0),
-		frame_timer(0),
-		frame_last_pts(0),
-		frame_last_delay(0),
-		video_clock(0),
-		video_current_pts(0),
-		video_current_pts_drift(0),
-		video_current_pos(0),
-		video_current_pts_time(0),
-		video_st(0),
-		pictq_size(0),
-		pictq_rindex(0),
-		pictq_windex(0),
-		parse_tid(0),
-		video_tid(0),
-		quit(0),
-		img_convert_ctx(0),
-		decode_finished(0),
-		video_finished(0),
-		audio_finished(0),
-		skip_frames(0),
-		skip_frames_index(0),
-		refresh(0)
+		avr_context(),
+		audio_diff_cum(),
+		audio_diff_avg_coef(),
+		audio_diff_threshold(),
+		audio_diff_avg_count(),
+		frame_timer(),
+		frame_last_pts(),
+		frame_last_delay(),
+		video_clock(),
+		video_current_pts(),
+		video_current_pts_drift(),
+		video_current_pos(),
+		video_current_pts_time(),
+		video_st(),
+		pictq_size(),
+		pictq_rindex(),
+		pictq_windex(),
+		parse_tid(),
+		video_tid(),
+		quit(),
+		img_convert_ctx(),
+		decode_finished(),
+		video_finished(),
+		audio_finished(),
+		skip_frames(),
+		skip_frames_index(),
+		refresh()
 
         // BBi
         ,
         subs ()
         // BBi
 	{
+#if 0
 		audio_buf = audio_buf1;
+#else
+        audio_frame = av_frame_alloc();
+#endif // 0
 
-		FFmpeg::av_init_packet(&audio_pkt);
+		av_init_packet(&audio_pkt);
 		memset(pictq, 0, sizeof(pictq));
 
 		//timer = CreateWaitableTimer(NULL, TRUE, NULL);
@@ -1009,12 +1063,12 @@ struct VideoState
 
 	double get_video_clock() const
 	{
-		return video_current_pts_drift + FFmpeg::av_gettime() / 1000000.0;
+		return video_current_pts_drift + av_gettime() / 1000000.0;
 	}
 
 	double get_external_clock() const 
 	{
-		const int64_t ti = FFmpeg::av_gettime();
+		const int64_t ti = av_gettime();
 		return external_clock + ((ti - external_clock_time) * 1e-6);
 	}
 
@@ -1048,21 +1102,31 @@ struct VideoState
 	{
 		Close();
 
-		pFormatCtx = FFmpeg::avformat_alloc_context();
+		pFormatCtx = avformat_alloc_context();
 
+#if 0
 		AVFormatParameters params, *ap = &params;
 
 		memset(ap, 0, sizeof(*ap));
 		ap->prealloced_context = 1;
 		ap->time_base.den = 1;
 		ap->time_base.num = 25;
+#endif // 0
 
 		// Open video file
+#if 0
 		if(FFmpeg::OpenFile(&pFormatCtx, filename, NULL, 0, ap)!=0)
+#else
+        if (FFmpeg::OpenFile(&pFormatCtx, filename) !=0 )
+#endif // 0
 			return FALSE; // Couldn't open file
 
 		// Retrieve stream information
-		if(FFmpeg::av_find_stream_info(pFormatCtx)<0)
+#if 0
+		if(av_find_stream_info(pFormatCtx)<0)
+#else
+        if (avformat_find_stream_info(pFormatCtx, nullptr) < 0)
+#endif // 0
 			return FALSE; // Couldn't find stream information
 
 		if(pFormatCtx->pb)
@@ -1070,7 +1134,7 @@ struct VideoState
 
 #if defined(_DEBUG) || defined(DEBUG)
 		// Dump information about file onto standard error
-		FFmpeg::dump_format(pFormatCtx, 0, filename, 0);
+		av_dump_format(pFormatCtx, 0, filename, 0);
 #endif
 
 		// Find the first video stream
@@ -1081,8 +1145,8 @@ struct VideoState
 		for (unsigned int i=0; i<pFormatCtx->nb_streams; i++)
 			pFormatCtx->streams[i]->discard = AVDISCARD_ALL;
 
-        st_index[AVMEDIA_TYPE_VIDEO] = FFmpeg::av_find_best_stream(pFormatCtx, AVMEDIA_TYPE_VIDEO, -1, -1, NULL, 0);
-        st_index[AVMEDIA_TYPE_AUDIO] = FFmpeg::av_find_best_stream(pFormatCtx, AVMEDIA_TYPE_AUDIO, -1, st_index[AVMEDIA_TYPE_VIDEO], NULL, 0);
+        st_index[AVMEDIA_TYPE_VIDEO] = av_find_best_stream(pFormatCtx, AVMEDIA_TYPE_VIDEO, -1, -1, NULL, 0);
+        st_index[AVMEDIA_TYPE_AUDIO] = av_find_best_stream(pFormatCtx, AVMEDIA_TYPE_AUDIO, -1, st_index[AVMEDIA_TYPE_VIDEO], NULL, 0);
         //st_index[AVMEDIA_TYPE_SUBTITLE] = FFmpeg::av_find_best_stream(pFormatCtx, AVMEDIA_TYPE_SUBTITLE, -1, (st_index[AVMEDIA_TYPE_AUDIO] >= 0 ? st_index[AVMEDIA_TYPE_AUDIO] : st_index[AVMEDIA_TYPE_VIDEO]), NULL, 0);
 
 		// Open streams
@@ -1131,9 +1195,13 @@ struct VideoState
 	{
 		Stop();
 
-		if (reformat_ctx)
-			FFmpeg::av_audio_convert_free(reformat_ctx);
+#if 0
+		if (avr_context)
+			av_audio_convert_free(reformat_ctx);
 		reformat_ctx = NULL;
+#else
+        swr_free(&avr_context);
+#endif // 0
 
 		videoStream = -1;
 		audioStream = -1;
@@ -1143,11 +1211,11 @@ struct VideoState
         
 		// Close the codec
 		if(video_st)
-			FFmpeg::avcodec_close(video_st->codec);
+			avcodec_close(video_st->codec);
 		video_st = NULL;
 
 		if(audio_st)
-			FFmpeg::avcodec_close(audio_st->codec);
+			avcodec_close(audio_st->codec);
 		audio_st = NULL;
 
 		// Close the video file
@@ -1156,7 +1224,7 @@ struct VideoState
 		pFormatCtx = NULL;
 
 		if(img_convert_ctx)
-			FFmpeg::sws_freeContext(img_convert_ctx);
+			sws_freeContext(img_convert_ctx);
 		img_convert_ctx = NULL;
 		
 		for(int i = 0; i < VIDEO_PICTURE_QUEUE_SIZE; ++i)
@@ -1174,7 +1242,7 @@ retry:
 			if(pictq_size == 0) {
 				schedule_refresh(1);
 			} else {
-				double time = FFmpeg::av_gettime()/1000000.0;
+				double time = av_gettime()/1000000.0;
 				double next_target;
 
 				/* dequeue the picture */
@@ -1201,11 +1269,11 @@ retry:
 					next_target= vp->target_clock + video_clock - vp->pts; //FIXME pass durations cleanly
 				}
 
-				#define FRAME_SKIP_FACTOR 0.05
+				#define FRAME_SKIP_FACTOR 0.05F
 				/**/const BOOL framedrop = TRUE;
 
 				if(framedrop && time > next_target) {
-					skip_frames *= 1.0 + FRAME_SKIP_FACTOR;
+					skip_frames *= 1.0F + FRAME_SKIP_FACTOR;
 					//if(pictq_size > 1 || time > next_target + 0.5) {
 					if(pictq_size > 1 && time > next_target + 0.5) {
 						/* update queue size and signal for next picture */
@@ -1418,10 +1486,16 @@ private:
 
 		for(;;) {
 			while(pkt2->size > 0) {
+#if 0
 				data_size = sizeof(audio_buf1);
-				len1 = FFmpeg::avcodec_decode_audio3(dec, 
+				len1 = avcodec_decode_audio3(dec, 
 					(int16_t *)audio_buf1, &data_size, 
 					pkt2);
+#else
+                int got_frame = 0;
+                len1 = avcodec_decode_audio4(
+                    dec, audio_frame, &got_frame, pkt2);
+#endif // 0
 
 #ifdef SIMULATE_SLOW_CPU
 				Sleep(AUDIO_DECODE_STALL);
@@ -1438,21 +1512,25 @@ private:
 
 				pkt2->data += len1;
 				pkt2->size -= len1;
+
+#if 0
 				if(data_size <= 0) {
 					/* No data yet, get more frames */
 					continue;
 				}
+#endif // 0
 
+#if 0
 				if (dec->sample_fmt != audio_src_fmt) {
 					if (reformat_ctx)
-						FFmpeg::av_audio_convert_free(reformat_ctx);
+						av_audio_convert_free(reformat_ctx);
 
-					reformat_ctx = FFmpeg::av_audio_convert_alloc(AV_SAMPLE_FMT_S16, 1, dec->sample_fmt, 1, NULL, 0);
+					reformat_ctx = av_audio_convert_alloc(AV_SAMPLE_FMT_S16, 1, dec->sample_fmt, 1, NULL, 0);
 
 					if (!reformat_ctx) {
 						Warning(("Cannot convert %s sample format to %s sample format\n",
-							FFmpeg::av_get_sample_fmt_name(dec->sample_fmt),
-							FFmpeg::av_get_sample_fmt_name(AV_SAMPLE_FMT_S16)));
+							av_get_sample_fmt_name(dec->sample_fmt),
+							av_get_sample_fmt_name(AV_SAMPLE_FMT_S16)));
 						break;
 					}
 
@@ -1462,11 +1540,11 @@ private:
 				if (reformat_ctx) {
 					const void *ibuf[6]= { audio_buf1 };
 					void *obuf[6] = { audio_buf2 };
-					int istride[6] = { FFmpeg::av_get_bits_per_sample_fmt(dec->sample_fmt)/8 };
+					int istride[6] = { av_get_bits_per_sample_fmt(dec->sample_fmt)/8 };
 					int ostride[6] = { 2 };
 					int len = data_size/istride[0];
 
-					if (FFmpeg::av_audio_convert(reformat_ctx, obuf, ostride, ibuf, istride, len)<0) {
+					if (av_audio_convert(reformat_ctx, obuf, ostride, ibuf, istride, len)<0) {
 						Warning(("av_audio_convert() failed\n"));
 						break;
 					}
@@ -1477,6 +1555,110 @@ private:
 				} else {
 					audio_buf = audio_buf1;
 				}
+#else
+                if (dec->sample_fmt != audio_src_fmt &&
+                    avr_context == nullptr)
+                {
+                    avr_context = swr_alloc();
+
+                    auto channel_layout =
+                        av_get_default_channel_layout(audio_frame->channels);
+
+                    auto sample_rate = audio_frame->sample_rate;
+
+                    int av_result = 0;
+                    bool is_succeed = true;
+
+                    //
+                    av_result = av_opt_set_int(
+                        avr_context,
+                        "in_channel_layout",
+                        channel_layout,
+                        0); // search flags
+
+                    is_succeed &= (av_result == 0);
+
+                    //
+                    av_result = av_opt_set_int(
+                        avr_context,
+                        "out_channel_layout",
+                        channel_layout,
+                        0); // search flags
+
+                    is_succeed &= (av_result == 0);
+
+                    //
+                    av_result = av_opt_set_int(
+                        avr_context,
+                        "in_sample_rate",
+                        sample_rate,
+                        0); // search flags
+
+                    is_succeed &= (av_result == 0);
+
+                    //
+                    av_result = av_opt_set_int(
+                        avr_context,
+                        "out_sample_rate",
+                        sample_rate,
+                        0); // search flags
+
+                    is_succeed &= (av_result == 0);
+
+                    //
+                    av_result = av_opt_set_int(
+                        avr_context,
+                        "in_sample_fmt",
+                        dec->sample_fmt,
+                        0); // search flags
+
+                    is_succeed &= (av_result == 0);
+
+                    //
+                    av_result = av_opt_set_int(
+                        avr_context,
+                        "out_sample_fmt",
+                        audio_src_fmt,
+                        0); // search flags
+
+                    if (is_succeed) {
+                        av_result = swr_init(avr_context);
+                        is_succeed = (av_result == 0);
+                    }
+
+                    if (!is_succeed) {
+                        swr_free(&avr_context);
+                    }
+                }
+
+                if (avr_context != nullptr) {
+                    int sample_size = 2 * audio_frame->channels;
+                    int sample_count = audio_frame->nb_samples;
+                    data_size = sample_size * audio_frame->nb_samples;
+
+                    if (static_cast<int>(avr_buffer.size()) < data_size)
+                        avr_buffer.resize(data_size);
+
+                    audio_buf = &avr_buffer[0];
+                    uint8_t* lines[] = { audio_buf };
+
+                    int av_result = swr_convert(
+                        avr_context,
+                        lines,
+                        sample_count,
+                        const_cast<const uint8_t**>(audio_frame->data),
+                        sample_count);
+
+                    if (av_result != sample_count)
+                        data_size = 0;
+                } else {
+                    int byte_depth = av_get_bytes_per_sample(
+                        dec->sample_fmt);
+                    int sample_size = byte_depth * audio_frame->channels;
+                    data_size = sample_size * audio_frame->nb_samples;
+                    audio_buf = audio_frame->data[0];
+                }
+#endif // 0
 
 				pts = audio_clock;
 				*pts_ptr = pts;
@@ -1489,7 +1671,7 @@ private:
 
 			/* free the current packet */
 			if(pkt->data)
-				FFmpeg::av_free_packet(pkt);
+				av_free_packet(pkt);
 
 			if(quit) {
 				return -1;
@@ -1527,7 +1709,7 @@ protected:
 		AVPacket pkt;
 		AVPacket *packet = &pkt;
 
-		FFmpeg::av_init_packet(packet);
+		av_init_packet(packet);
 
 		int eof = 0;
 
@@ -1554,7 +1736,7 @@ protected:
 				continue;
 			}
 
-			if(FFmpeg::av_read_frame(is->pFormatCtx, packet) < 0) {
+			if(av_read_frame(is->pFormatCtx, packet) < 0) {
 				eof = 1;
 				// signal queues that nothing more is coming
 				is->videoq.Depleted();
@@ -1567,7 +1749,7 @@ protected:
 			} else if(packet->stream_index == is->audioStream) {
 				is->audioq.Put(packet);
 			} else {
-				FFmpeg::av_free_packet(packet);
+				av_free_packet(packet);
 			}			
 		}
 
@@ -1586,7 +1768,9 @@ private:
 #pragma pack()
 
 
+#if 0
 static uint64_t global_video_pkt_pts = AV_NOPTS_VALUE;
+#endif // 0
 
 /*int our_get_buffer(struct AVCodecContext *c, AVFrame *pic)
 {
@@ -1635,7 +1819,7 @@ protected:
 		double pts;
 		int64_t pts_int;
 
-		pFrame = FFmpeg::avcodec_alloc_frame();
+		pFrame = av_frame_alloc();
 
 		for(;;) {
 			if(is->videoq.Get(packet, 1) < 0) {
@@ -1645,10 +1829,13 @@ protected:
 
 			pts_int = 0;
 
+#if 0
 			// Save global pts to be stored in pFrame
 			global_video_pkt_pts = packet->pts;
+#endif // 0
+
 			// Decode video frame
-			len1 = FFmpeg::avcodec_decode_video2(is->video_st->codec, pFrame, &frameFinished, packet);
+			len1 = avcodec_decode_video2(is->video_st->codec, pFrame, &frameFinished, packet);
 
 #ifdef SIMULATE_SLOW_CPU
 			Sleep(VIDEO_DECODE_STALL);
@@ -1667,10 +1854,10 @@ protected:
 
 				is->skip_frames_index += 1;
 				if(is->skip_frames_index >= is->skip_frames) {
-					is->skip_frames_index -= FFMAX(is->skip_frames, 1.0);
+					is->skip_frames_index -= std::max(is->skip_frames, 1.0F);
 
 					if(queue_picture(pFrame, pts, packet->pos) < 0) {
-						FFmpeg::av_free_packet(packet);
+						av_free_packet(packet);
 						break;
 					}
 				}
@@ -1681,9 +1868,9 @@ protected:
 				}
 #endif
 			}
-			FFmpeg::av_free_packet(packet);
+			av_free_packet(packet);
 		}
-		FFmpeg::av_free(pFrame);
+		av_free(pFrame);
 
 		is->VideoFinished();
 
@@ -1716,7 +1903,7 @@ private:
 		// wait until we have space for a new pic
 		is->pictq_mutex.Wait();
 		if(is->pictq_size>=VIDEO_PICTURE_QUEUE_SIZE && !is->refresh)
-			is->skip_frames= FFMAX(1.0 - FRAME_SKIP_FACTOR, is->skip_frames * (1.0-FRAME_SKIP_FACTOR));
+			is->skip_frames= std::max(1.0F - FRAME_SKIP_FACTOR, is->skip_frames * (1.0F-FRAME_SKIP_FACTOR));
 		while(is->pictq_size >= VIDEO_PICTURE_QUEUE_SIZE &&	!is->quit) 
 		{
 			SDL_CondWait(is->pictq_cond, is->pictq_mutex);
@@ -1739,12 +1926,12 @@ private:
 		uint8 *data[] = {(uint8*)lock.buffer, NULL, NULL};
 		int stride[] = {lock.pitch, 0, 0};
 
-		is->img_convert_ctx = FFmpeg::sws_getCachedContext(is->img_convert_ctx,
+		is->img_convert_ctx = sws_getCachedContext(is->img_convert_ctx,
 			is->video_st->codec->width, is->video_st->codec->height, is->video_st->codec->pix_fmt,
 			fmt.width, fmt.height, is->pict_pix_fmt,
 			sws_flags, NULL, NULL, NULL);
 
-		FFmpeg::sws_scale(is->img_convert_ctx, pFrame->data,
+		sws_scale(is->img_convert_ctx, pFrame->data,
 			pFrame->linesize, 0,
 			is->video_st->codec->height, data, stride);
 
@@ -1785,9 +1972,11 @@ BOOL VideoState::Play()
 	audioq.Finished(0);
 	videoq.Quit(0);
 	audioq.Quit(0);
-    quit = 0;       
+    quit = 0;
 
+#if 0
     global_video_pkt_pts = AV_NOPTS_VALUE;
+#endif // 0
     
 	audio_clock = 0;
 	audio_diff_cum = 0;
@@ -1813,7 +2002,7 @@ BOOL VideoState::Play()
     memset(&audio_pkt, 0, sizeof(audio_pkt));
     memset(&audio_pkt2, 0, sizeof(audio_pkt2));
 
-	const int64_t curtime = FFmpeg::av_gettime();
+	const int64_t curtime = av_gettime();
 
     frame_timer = (double)curtime / 1000000.0;
     frame_last_delay = 40e-3;
@@ -1857,6 +2046,7 @@ int VideoState::stream_component_open(int stream_index)
 	// Get a pointer to the codec context for the video stream
 	codecCtx = pFormatCtx->streams[stream_index]->codec;
 
+#if 0
 	/* prepare audio output */
 	if (codecCtx->codec_type == AVMEDIA_TYPE_AUDIO) {
 		if (codecCtx->channels > 0) {
@@ -1865,8 +2055,9 @@ int VideoState::stream_component_open(int stream_index)
 			codecCtx->request_channels = 2;
 		}
 	}
+#endif // 0
 
-	codec = FFmpeg::avcodec_find_decoder(codecCtx->codec_id);
+	codec = avcodec_find_decoder(codecCtx->codec_id);
 
 #ifdef _DEBUG
     codecCtx->debug = FF_DEBUG_BUGS|/*FF_DEBUG_VIS_MB_TYPE|*/FF_DEBUG_ER|/*FF_DEBUG_SKIP|FF_DEBUG_PICT_INFO|*/FF_DEBUG_PTS;
@@ -1885,7 +2076,11 @@ int VideoState::stream_component_open(int stream_index)
     codecCtx->error_concealment = 3;
     codecCtx->thread_count = 1;*/
 
-	if(!codec || (FFmpeg::avcodec_open(codecCtx, codec) < 0)) {
+#if 0
+	if(!codec || (avcodec_open(codecCtx, codec) < 0)) {
+#else
+    if(!codec || (avcodec_open2(codecCtx, codec, NULL) < 0)) {
+#endif // 0
 		AssertMsg(FALSE, "Unsupported codec!\n");
 		return -1;
 	}
@@ -2102,6 +2297,7 @@ BOOL cLGVideoDecoder::Init(const char *filename)
 	if ( !FFmpeg::Init(this) )
 		return FALSE;
 
+#if 0
 	// detect if separate indeo5 codec (ir50_32.dll) is available and use that if so (otherwise falls back to ffmpeg's
 	// internal codec in order to ensure functionality if someone missed adding the dll)
 	if (FFmpeg::avcodec_enable_ir50dll)
@@ -2120,9 +2316,15 @@ BOOL cLGVideoDecoder::Init(const char *filename)
 		if (initialized > 0)
 			FFmpeg::avcodec_enable_ir50dll(1);
 	}
+#endif // 0
 
-	FFmpeg::avcodec_init();
-	FFmpeg::av_register_all();
+#if 0
+	avcodec_init();
+#else
+    avcodec_register_all();
+#endif // 0
+
+	av_register_all();
 
 	is = new VideoState(this);
 
