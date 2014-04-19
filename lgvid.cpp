@@ -984,8 +984,15 @@ private:
                     avr_context == nullptr) {
                     avr_context = swr_alloc();
 
-                    auto channel_layout =
-                        av_get_default_channel_layout(audio_frame->channels);
+                    auto src_channel_layout = audio_frame->channel_layout;
+
+                    if (src_channel_layout == 0) {
+                        src_channel_layout = av_get_default_channel_layout(
+                            audio_frame->channels);
+                    }
+
+                    auto dst_channel_layout =
+                        av_get_default_channel_layout(2);
 
                     auto sample_rate = audio_frame->sample_rate;
 
@@ -996,7 +1003,7 @@ private:
                     av_result = av_opt_set_int(
                         avr_context,
                         "in_channel_layout",
-                        channel_layout,
+                        src_channel_layout,
                         0); // search flags
 
                     is_succeed &= (av_result == 0);
@@ -1005,7 +1012,7 @@ private:
                     av_result = av_opt_set_int(
                         avr_context,
                         "out_channel_layout",
-                        channel_layout,
+                        dst_channel_layout,
                         0); // search flags
 
                     is_succeed &= (av_result == 0);
@@ -1055,7 +1062,7 @@ private:
                 }
 
                 if (avr_context != nullptr) {
-                    int sample_size = 2 * audio_frame->channels;
+                    int sample_size = 2 * 2; // 16 bit, stereo
                     int sample_count = audio_frame->nb_samples;
                     data_size = sample_size * audio_frame->nb_samples;
 
@@ -1449,7 +1456,7 @@ int VideoState::stream_component_open(int stream_index)
         // we want 16-bit samples out from the movie (they'll be converted if necessary)
         audio_src_fmt = AV_SAMPLE_FMT_S16;
 
-        if (!pOuter->m_pHostIface->CreateAudioBuffer(codecCtx->sample_rate, codecCtx->channels, AUDIO_BUFFER_SIZE))
+        if (!pOuter->m_pHostIface->CreateAudioBuffer(codecCtx->sample_rate, 2, AUDIO_BUFFER_SIZE))
             break;
 
         audioStream = stream_index;
