@@ -22,9 +22,9 @@
 
 #include <cassert>
 #include <algorithm>
+#include <thread>
 #include <vector>
 #include <windows.h>
-#include <process.h>
 
 extern "C" {
 #include <libavcodec/avcodec.h>
@@ -230,24 +230,6 @@ namespace FFmpeg {
 ///////////////////////////////////////////////////////////////////////////////
 // Thread Utilities
 
-class cThreadLock {
-public:
-    cThreadLock() { InitializeCriticalSection(&m_CritSec); }
-    ~cThreadLock() { DeleteCriticalSection(&m_CritSec); }
-    void Lock() { EnterCriticalSection(&m_CritSec); }
-    void Unlock() { LeaveCriticalSection(&m_CritSec); }
-private:
-    CRITICAL_SECTION m_CritSec;
-};
-
-class cAutoLock {
-public:
-    cAutoLock(cThreadLock &lock) : m_lock(lock) { m_lock.Lock(); }
-    ~cAutoLock() { m_lock.Unlock(); }
-private:
-    cThreadLock &m_lock;
-};
-
 class cThreadSyncObject {
 public:
     ~cThreadSyncObject() { if (m_hSyncObject) CloseHandle(m_hSyncObject); }
@@ -257,15 +239,6 @@ public:
 protected:
     cThreadSyncObject() : m_hSyncObject(NULL) {}
     HANDLE m_hSyncObject;
-};
-
-class cThreadEvent : public cThreadSyncObject {
-public:
-    cThreadEvent(BOOL fManualReset = FALSE) { m_hSyncObject = CreateEvent(NULL, fManualReset, FALSE, NULL); }
-    BOOL Set() { return SetEvent(m_hSyncObject); }
-    BOOL Reset() { return ResetEvent(m_hSyncObject); }
-    BOOL Pulse() { return PulseEvent(m_hSyncObject); }
-    BOOL Check() { return Wait(0); }
 };
 
 class cThreadSemaphore : public cThreadSyncObject {
@@ -281,52 +254,55 @@ public:
 };
 
 
-class cWorkerThread {
+class WorkerThread {
 public:
-    cWorkerThread() : m_hThread(NULL), m_EventSend(TRUE) {}
-    virtual ~cWorkerThread() { if (m_hThread) WaitForClose(); }
-    BOOL Create()
+    WorkerThread() :
+        thread_()
     {
-        unsigned int threadid;
-        cAutoLock lock(m_Lock);
-        if (ThreadExists()) {
-            AssertMsg(FALSE, "thread already created");
-            return FALSE;
-        }
-        m_hThread = (HANDLE) _beginthreadex(NULL, 0, cWorkerThread::InitialThreadProc, this, 0, &threadid);
-        AssertMsg1(m_hThread, "create thread failed (%x)", GetLastError());
-        if (!m_EventComplete.Wait(10000)) {
-            AssertMsg(FALSE, "timed out waiting for worker thread to init");
-        }
-        return m_hThread != NULL;
     }
-    void WaitForClose(DWORD dwErrorTimeout = 10000)
+
+    virtual ~WorkerThread()
     {
-        if (!m_hThread)
+        if (thread_ != nullptr)
+            wait_for_close();
+    }
+
+    bool create()
+    {
+        if (thread_ != nullptr)
+            return false;
+
+        try {
+            thread_ = new std::thread(
+                WorkerThread::thread_proc_wrapper,
+                this);
+        } catch (const std::system_error&) {
+        }
+
+        return thread_ != nullptr;
+    }
+
+    void wait_for_close()
+    {
+        if (thread_ == nullptr)
             return;
-        if (WaitForSingleObject(m_hThread, dwErrorTimeout) == WAIT_TIMEOUT) {
-            AssertMsg(FALSE, "timed out waiting for worker thread to close");
-        }
-        CloseHandle(m_hThread);
-        m_hThread = NULL;
+
+        thread_->join();
+        thread_ = nullptr;
     }
-    BOOL ThreadExists() { DWORD dwExitCode; return (m_hThread && GetExitCodeThread(m_hThread, &dwExitCode) && dwExitCode == STILL_ACTIVE); }
 
 protected:
-    enum { kInvalidCallParam = 0xffffffff };
-    virtual DWORD ThreadProc() = 0;
-    cThreadLock m_Lock;
+    virtual void thread_proc() = 0;
 
 private:
-    static unsigned __stdcall InitialThreadProc(LPVOID pv)
+    static void thread_proc_wrapper(
+        void* pv)
     {
-        cWorkerThread * pThread = (cWorkerThread *) pv;
-        pThread->m_EventComplete.Set();
-        return pThread->ThreadProc();
+        auto pThread = static_cast<WorkerThread*>(pv);
+        pThread->thread_proc();
     }
-    HANDLE          m_hThread;
-    cThreadEvent    m_EventSend;
-    cThreadEvent    m_EventComplete;
+
+    std::thread* thread_;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1235,11 +1211,16 @@ private:
 // DecodeThread
 //
 
-class DecodeThread : public cWorkerThread {
+class DecodeThread : public WorkerThread {
 public:
-    DecodeThread(VideoState *is) : is(is) {};
+    DecodeThread(
+        VideoState* is) :
+            is(is)
+    {
+    };
+
 protected:
-    virtual DWORD ThreadProc()
+    virtual void thread_proc()
     {
         AVPacket pkt;
         AVPacket *packet = &pkt;
@@ -1289,8 +1270,6 @@ protected:
 
         is->quit = 1;
         is->DecodeFinished();
-
-        return 0;
     }
 
 private:
@@ -1305,13 +1284,15 @@ private:
 // VideoThread
 //
 
-class VideoThread : public cWorkerThread {
+class VideoThread : public WorkerThread {
 public:
-    VideoThread(VideoState *is) : is(is)
+    VideoThread(
+        VideoState* is) :
+            is(is)
     {
     }
 protected:
-    virtual DWORD ThreadProc()
+    virtual void thread_proc()
     {
         AVPacket pkt1;
         AVPacket *packet = &pkt1;
@@ -1368,8 +1349,6 @@ protected:
         av_free(pFrame);
 
         is->VideoFinished();
-
-        return 0;
     }
 
 private:
@@ -1507,7 +1486,7 @@ BOOL VideoState::Play()
 
     Assert_(video_tid == NULL);
     video_tid = new VideoThread(this);
-    if (!video_tid->Create()) {
+    if (!video_tid->create()) {
         AssertMsg(FALSE, "VideoThread::Create");
     }
 
@@ -1515,7 +1494,7 @@ BOOL VideoState::Play()
 
     Assert_(parse_tid == NULL);
     parse_tid = new DecodeThread(this);
-    if (!parse_tid->Create()) {
+    if (!parse_tid->create()) {
         AssertMsg(FALSE, "DecodeThread::Create");
     }
 
@@ -1585,12 +1564,12 @@ void VideoState::Stop()
     SDL_CondSignal(pictq_cond);
 
     if (video_tid)
-        video_tid->WaitForClose();
+        video_tid->wait_for_close();
     delete video_tid;
     video_tid = 0;
 
     if (parse_tid)
-        parse_tid->WaitForClose();
+        parse_tid->wait_for_close();
     delete parse_tid;
     parse_tid = 0;
 }
