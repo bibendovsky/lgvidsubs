@@ -22,6 +22,7 @@
 
 #include <cassert>
 #include <algorithm>
+#include <mutex>
 #include <thread>
 #include <vector>
 #include <windows.h>
@@ -247,13 +248,6 @@ public:
     BOOL Release(long releaseCount = 1, long * pPreviousCount = NULL) { return ReleaseSemaphore(m_hSyncObject, releaseCount, pPreviousCount); }
 };
 
-class cThreadMutex : public cThreadSyncObject {
-public:
-    cThreadMutex(BOOL fEstablishInitialOwnership = FALSE) { m_hSyncObject = CreateMutex(NULL, fEstablishInitialOwnership, NULL); }
-    BOOL Release() { return ReleaseMutex(m_hSyncObject); }
-};
-
-
 class WorkerThread {
 public:
     WorkerThread() :
@@ -309,7 +303,8 @@ private:
 // SDL_Cond
 
 struct SDL_cond {
-    cThreadMutex lock;
+    std::mutex lock;
+
     int waiting;
     int signals;
     cThreadSemaphore wait_sem;
@@ -324,33 +319,36 @@ struct SDL_cond {
 
 int SDL_CondSignal(SDL_cond &cond)
 {
-    cond.lock.Wait();
+    cond.lock.lock();
 
     if (cond.waiting > cond.signals) {
         ++cond.signals;
         cond.wait_sem.Release();
-        cond.lock.Release();
+        cond.lock.unlock();
         cond.wait_done.Wait();
     } else {
-        cond.lock.Release();
+        cond.lock.unlock();
     }
 
     return 0;
 }
 
-int SDL_CondWaitTimeout(SDL_cond &cond, cThreadMutex &mutex, uint32 ms)
+int SDL_CondWaitTimeout(
+    SDL_cond& cond,
+    std::mutex& mutex,
+    uint32 ms)
 {
     int retval;
 
-    cond.lock.Wait();
+    cond.lock.lock();
     ++cond.waiting;
-    cond.lock.Release();
+    cond.lock.unlock();
 
-    mutex.Release();
+    mutex.unlock();
 
     retval = !cond.wait_sem.Wait(ms);
 
-    cond.lock.Wait();
+    cond.lock.lock();
 
     if (cond.signals > 0) {
         if (retval > 0)
@@ -360,14 +358,16 @@ int SDL_CondWaitTimeout(SDL_cond &cond, cThreadMutex &mutex, uint32 ms)
     }
 
     --cond.waiting;
-    cond.lock.Release();
+    cond.lock.unlock();
 
-    mutex.Wait();
+    mutex.lock();
 
     return retval;
 }
 
-inline int SDL_CondWait(SDL_cond &cond, cThreadMutex &mutex)
+inline int SDL_CondWait(
+    SDL_cond& cond,
+    std::mutex& mutex)
 {
     return SDL_CondWaitTimeout(cond, mutex, ~0U);
 }
@@ -389,7 +389,7 @@ struct PacketQueue {
     AVPacketList *first_pkt, *last_pkt;
     int nb_packets;
     int size;
-    cThreadMutex mutex;
+    std::mutex mutex;
     SDL_cond cond;
 
     int Put(AVPacket *pkt)
@@ -407,7 +407,7 @@ struct PacketQueue {
         pkt1->pkt = *pkt;
         pkt1->next = NULL;
 
-        mutex.Wait();
+        mutex.lock();
 
         if (!last_pkt)
             first_pkt = pkt1;
@@ -419,7 +419,7 @@ struct PacketQueue {
 
         SDL_CondSignal(cond);
 
-        mutex.Release();
+        mutex.unlock();
         return 0;
     }
 
@@ -428,7 +428,7 @@ struct PacketQueue {
         AVPacketList *pkt1;
         int ret;
 
-        mutex.Wait();
+        mutex.lock();
 
         for (;;) {
             if (quit) {
@@ -460,7 +460,7 @@ struct PacketQueue {
                 SDL_CondWait(cond, mutex);
             }
         }
-        mutex.Release();
+        mutex.unlock();
         return ret;
     }
 
@@ -468,7 +468,7 @@ struct PacketQueue {
     {
         AVPacketList *pkt, *pkt1;
 
-        mutex.Wait();
+        mutex.lock();
         for (pkt = first_pkt; pkt != NULL; pkt = pkt1) {
             pkt1 = pkt->next;
             av_free_packet(&pkt->pkt);
@@ -478,38 +478,38 @@ struct PacketQueue {
         first_pkt = NULL;
         nb_packets = 0;
         size = 0;
-        mutex.Release();
+        mutex.unlock();
     }
 
     void Quit(int ret = 1)
     {
-        mutex.Wait();
+        mutex.lock();
         quit = ret;
 
         SDL_CondSignal(cond);
 
-        mutex.Release();
+        mutex.unlock();
     }
 
     void Finished(int ret = 1)
     {
-        mutex.Wait();
+        mutex.lock();
         finished = ret;
 
         SDL_CondSignal(cond);
 
-        mutex.Release();
+        mutex.unlock();
     }
 
     void Depleted()
     {
-        mutex.Wait();
+        mutex.lock();
 
         finished = 1;
         if (!first_pkt)
             SDL_CondSignal(cond);
 
-        mutex.Release();
+        mutex.unlock();
     }
 private:
     int quit;
@@ -575,7 +575,7 @@ struct VideoState {
     PixelFormat     pict_pix_fmt;
     VideoPicture    pictq[VIDEO_PICTURE_QUEUE_SIZE];
     int             pictq_size, pictq_rindex, pictq_windex;
-    cThreadMutex    pictq_mutex;
+    std::mutex pictq_mutex;
     SDL_cond        pictq_cond;
     class DecodeThread     *parse_tid;
     class VideoThread      *video_tid;
@@ -864,10 +864,10 @@ struct VideoState {
                         Warning(("ffmpeg: dropped display frame dt:%g q:%d sf:%g\n", next_target - time, pictq_size, skip_frames));
 #endif
 
-                        pictq_mutex.Wait();
+                        pictq_mutex.lock();
                         pictq_size--;
                         SDL_CondSignal(pictq_cond);
-                        pictq_mutex.Release();
+                        pictq_mutex.unlock();
                         goto retry;
                     }
                 }
@@ -885,10 +885,10 @@ struct VideoState {
                         pictq_rindex = 0;
                     }
 
-                    pictq_mutex.Wait();
+                    pictq_mutex.lock();
                     pictq_size--;
                     SDL_CondSignal(pictq_cond);
-                    pictq_mutex.Release();
+                    pictq_mutex.unlock();
 
                     pOuter->m_pHostIface->EndVideoFrame();
 
@@ -1376,13 +1376,13 @@ private:
         VideoState::VideoPicture *vp;
 
         // wait until we have space for a new pic
-        is->pictq_mutex.Wait();
+        is->pictq_mutex.lock();
         if (is->pictq_size >= VIDEO_PICTURE_QUEUE_SIZE && !is->refresh)
             is->skip_frames = std::max(1.0F - FRAME_SKIP_FACTOR, is->skip_frames * (1.0F - FRAME_SKIP_FACTOR));
         while (is->pictq_size >= VIDEO_PICTURE_QUEUE_SIZE &&	!is->quit) {
             SDL_CondWait(is->pictq_cond, is->pictq_mutex);
         }
-        is->pictq_mutex.Release();
+        is->pictq_mutex.unlock();
 
         if (is->quit)
             return -1;
@@ -1418,10 +1418,10 @@ private:
         if (++is->pictq_windex == VIDEO_PICTURE_QUEUE_SIZE) {
             is->pictq_windex = 0;
         }
-        is->pictq_mutex.Wait();
+        is->pictq_mutex.lock();
         vp->target_clock = is->compute_target_time(vp->pts);
         is->pictq_size++;
-        is->pictq_mutex.Release();
+        is->pictq_mutex.unlock();
 
         return 0;
     }
@@ -1655,10 +1655,10 @@ STDMETHODIMP_(void) cLGVideoDecoder::RequestVideoFrame()
                 if (++is->pictq_rindex == VIDEO_PICTURE_QUEUE_SIZE)
                     is->pictq_rindex = 0;
 
-                is->pictq_mutex.Wait();
+                is->pictq_mutex.lock();
                 is->pictq_size--;
                 ::SDL_CondSignal(is->pictq_cond);
-                is->pictq_mutex.Release();
+                is->pictq_mutex.unlock();
             }
 
             is->pOuter->m_pHostIface->EndVideoFrame();
