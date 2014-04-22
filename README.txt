@@ -12,7 +12,7 @@ http://ariane4ever.free.fr/ariane4ever/viewtopic.php?f=2&t=4287&start=0&st=0&sk=
 
 System requirements
 -------------------
-Same as for the NewDark patch.
+NewDark patch (v1.20 Thief/Thief2, v2.42 System Shock 2).
 
 
 Installation
@@ -23,12 +23,11 @@ Extract "lgvid.dll" into the game folder.
 Compilation
 -----------
 
-You need Visual Studio 2012 or higher (express/full)
-to compile the project.
+You need Visual Studio 2013 or higher (express/full) to compile the project.
 
-Also, the project depends on the Microsoft DirectX SDK (June 2010)
-Expected to be installed in
-  "c:\Program Files (x86)\Microsoft DirectX SDK (June 2010)\".
+Dependencies:
+1) Microsoft DirectX SDK (June 2010) headers and libraries.
+2) FFMpeg 2.2.1 (or higher) headers and static libraries.
 
 
 Configuration options for "cam_ext.cfg"
@@ -72,8 +71,8 @@ Some useful values:
 400 - normal;
 700 - bold.
 
-(See LOGFONT structure in MSDN for more info.)
-(http://msdn.microsoft.com/en-us/library/windows/desktop/dd145037%28v=vs.85%29.aspx)
+(See LOGFONT structure in MSDN for more info:
+ http://msdn.microsoft.com/library/windows/desktop/dd145037%28v=vs.85%29.aspx)
 
 
 subs_font_color <r> <g> <b> <a>
