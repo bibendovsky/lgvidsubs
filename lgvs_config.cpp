@@ -17,6 +17,7 @@
 #include "lgvs_config.h"
 
 #include <fstream>
+#include <iomanip>
 #include <sstream>
 
 #include "lgvs_math.h"
@@ -201,6 +202,26 @@ unsigned Config::get_rgba_color(
     sstream_.clear();
     sstream_.str(get_string(key));
 
+    int first_symbol = sstream_.peek();
+
+    if (first_symbol == L'#') {
+        // #rrggbbaa format
+        unsigned int rgba;
+
+        wchar_t sharp;
+        sstream_ >> sharp >> std::hex >> rgba >> std::dec;
+
+        if (sstream_) {
+            unsigned int alpha = rgba & 0xFF;
+            rgba >>= 8;
+            rgba |= alpha << 24;
+            return rgba;
+        }
+
+        return default_value;
+    }
+
+    // r g b a
     float color_buffer[4];
 
     sstream_ >>
