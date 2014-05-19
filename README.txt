@@ -76,10 +76,13 @@ Some useful values:
 
 
 subs_font_color <r> <g> <b> <a>
+subs_font_color #rrggbbaa
 -------------------------------
 Text color.
-Default value: 1.0 1.0 1.0 1.0 (solid white)
-Valid range of component: 0.0 .. 1.0
+Default value (fp): 1.0 1.0 1.0 1.0 (solid white)
+Default value (#): #ffffffff (solid white)
+Valid range of color component (fp): 0.0 .. 1.0
+Valid range of color component (#): 00 .. ff
 
 
 subs_shadow_color <r> <g> <b> <a>
@@ -119,7 +122,7 @@ subs_font_filename my_arial.ttf
 subs_font_family arial
 subs_font_size 8.0%
 subs_font_weight 700
-subs_font_color 0.8 1.0 0.8 1.0
+subs_font_color #cc0000ff
 subs_shadow_color 0.0 0.0 0.0 0.7
 subs_shadow_offset_x 2
 subs_shadow_offset_y 1
