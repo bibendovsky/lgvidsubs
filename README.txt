@@ -1,7 +1,7 @@
 LgVidSubs
 
 Modified "lgvid" from unofficial NewDark patch
-to support external subtitles in movies.
+to support external subtitles in cut-scenes.
 
 Source code and releases available at
 https://github.com/bibendovsky/lgvidsubs
@@ -26,15 +26,18 @@ Compilation
 You need Visual Studio 2013 or higher (express/full) to compile the project.
 
 Dependencies:
-1) Microsoft DirectX SDK (June 2010) headers and libraries.
-2) FFMpeg 2.2.1 (or higher) headers and static libraries.
+1) *Microsoft Detours 3.0 (included).
+2) *Microsoft DirectX SDK (June 2010) headers and libraries.
+3) FFmpeg 2.2.2 (or higher) headers and static libraries.
+
+* - Only needed if you building a project with subtitle support.
 
 
 Configuration options for "cam_ext.cfg"
 ---------------------------------------
 
-Note, some values can be marked as percents. In that case the
-value will be converted to pixels by the folowing expression:
+Note, some values can be marked as percent. In that case the
+value will be converted to pixels by the following expression:
 
 value_pixels = screen_height * value_percents / 100
 
@@ -51,7 +54,7 @@ Font family name.
 Default value: Arial
 
 
-subs_font_size <pixels|percents%>
+subs_font_size <pixels|percent%>
 ---------------------------------
 Font size.
 Default value: 7%
@@ -78,21 +81,21 @@ Some useful values:
 subs_font_color <r> <g> <b> <a>
 subs_font_color #rrggbbaa
 -------------------------------
-Text color.
+Text colour.
 Default value (fp): 1.0 1.0 1.0 1.0 (solid white)
 Default value (#): #ffffffff (solid white)
-Valid range of color component (fp): 0.0 .. 1.0
-Valid range of color component (#): 00 .. ff
+Valid range of colour component (fp): 0.0 .. 1.0
+Valid range of colour component (#): 00 .. ff
 
 
 subs_shadow_color <r> <g> <b> <a>
 ---------------------------------
-Text's shadow color.
+Text's shadow colour.
 Default value: 0.0 0.0 0.0 0.0 (solid black)
 Valid range of component: 0.0 .. 1.0
 
 
-subs_shadow_offset_x <pixels|percents%>
+subs_shadow_offset_x <pixels|percent%>
 ---------------------------------------
 Text's shadow offset by X.
 Default value: 0.42%
@@ -100,7 +103,7 @@ Valid range (%):  -1.45 .. 1.45
 Valid range (pixels): -7 .. 7
 
 
-subs_shadow_offset_y <pixels|percents%>
+subs_shadow_offset_y <pixels|percent%>
 ---------------------------------------
 Text's shadow offset by Y.
 Default value: 0.42%
@@ -108,7 +111,7 @@ Valid range (%):  -1.45 .. 1.45
 Valid range (pixels): -7 .. 7
 
 
-subs_space_after <pixels|percents%>
+subs_space_after <pixels|percent%>
 -----------------------------------
 Offset of text of screen's bottom.
 Default value: 3.5%
