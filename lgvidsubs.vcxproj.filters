@@ -48,12 +48,6 @@
     <ClCompile Include="lgvs_config.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="lgvs_detour.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="lgvs_trampoline_cache.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="lgviddecoder.h">
@@ -96,12 +90,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="lgvs_config.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="lgvs_detour.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="lgvs_trampoline_cache.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

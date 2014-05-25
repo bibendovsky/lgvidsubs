@@ -21,7 +21,7 @@
 #include <algorithm>
 #include <bitset>
 #include <new>
-
+#include "detours.h"
 #include "lgvs_system.h"
 
 
@@ -29,13 +29,15 @@ namespace lgvs {
 
 
 Detours::Detours() :
-    is_initialized_(false),
-    is_detoured_(false),
-    d3d9_library_(nullptr),
-    end_scene_detour_(),
-    test_coop_level_detour_(),
-    reset_detour_(),
-    trampoline_cache_()
+    is_initialized_(),
+    is_detoured_(),
+    d3d9_library_(),
+    fake_end_scene_(),
+    fake_test_coop_level_(),
+    fake_reset_(),
+    real_end_scene_(),
+    real_test_coop_level_(),
+    real_reset_()
 {
 }
 
@@ -53,17 +55,17 @@ bool Detours::initialize(
 
     error_string_.clear();
 
-    if (fake_end_scene == nullptr) {
+    if (!fake_end_scene) {
         error_string_ = L"Null \"EndScene\" fake function pointer.";
         return false;
     }
 
-    if (fake_test_coop_level == nullptr) {
+    if (!fake_test_coop_level) {
         error_string_ = L"Null \"TestCooperativeLevel\" fake function pointer.";
         return false;
     }
 
-    if (fake_reset == nullptr) {
+    if (!fake_reset) {
         error_string_ = L"Null \"Reset\" fake function pointer.";
         return false;
     }
@@ -74,7 +76,7 @@ bool Detours::initialize(
 
     d3d9_library_ = ::LoadLibraryW(d3d9_dll_path.c_str());
 
-    if (d3d9_library_ == nullptr) {
+    if (!d3d9_library_) {
         error_string_ = L"Failed to load a system Direct3D 9 main library.";
         return false;
     }
@@ -91,7 +93,7 @@ bool Detours::initialize(
         wce.cbSize = sizeof(wce);
         wce.style = CS_CLASSDC;
         wce.lpfnWndProc = ::DefWindowProcW;
-        wce.lpszClassName = L"LgVidSubsDummyClass";
+        wce.lpszClassName = L"LgVidSubsDetoursDummyClass";
 
         dummy_class = ::RegisterClassExW(&wce);
 
@@ -171,39 +173,44 @@ bool Detours::initialize(
         }
     }
 
-    if (is_succeed)
-        is_succeed = trampoline_cache_.initialize(16, 16);
-
     if (is_succeed) {
-        is_succeed &= end_scene_detour_.initialize(
-            d3d_device9->lpVtbl->EndScene,
-            fake_end_scene,
-            7,
-            &trampoline_cache_);
+        fake_end_scene_ = fake_end_scene;
+        fake_test_coop_level_ = fake_test_coop_level;
+        fake_reset_ = fake_reset;
 
-        is_succeed &= test_coop_level_detour_.initialize(
-            d3d_device9->lpVtbl->TestCooperativeLevel,
-            fake_test_coop_level,
-            5,
-            &trampoline_cache_);
+        real_end_scene_ = d3d_device9->lpVtbl->EndScene;
+        real_test_coop_level_ = d3d_device9->lpVtbl->TestCooperativeLevel;
+        real_reset_ = d3d_device9->lpVtbl->Reset;
 
-        is_succeed &= reset_detour_.initialize(
-            d3d_device9->lpVtbl->Reset,
-            fake_reset,
-            5,
-            &trampoline_cache_);
+        LONG d_result = 0;
+
+        d_result = ::DetourTransactionBegin();
+        d_result = ::DetourUpdateThread(::GetCurrentThread());
+        d_result = ::DetourAttach(&reinterpret_cast<PVOID&>(real_end_scene_), fake_end_scene);
+        d_result = ::DetourAttach(&reinterpret_cast<PVOID&>(real_test_coop_level_), fake_test_coop_level);
+        d_result = ::DetourAttach(&reinterpret_cast<PVOID&>(real_reset_), fake_reset);
+
+        if (d_result != 0) {
+            is_succeed = false;
+            d_result = ::DetourTransactionAbort();
+        } else {
+            d_result = ::DetourTransactionCommit();
+            is_succeed = (d_result == 0);
+        }
 
         if (!is_succeed)
             error_string_ = L"Failed to detour Direct3D 9 APIs.";
+        else
+            is_detoured_ = true;
     }
 
-    if (d3d_device9 != nullptr)
+    if (d3d_device9)
         IDirect3DDevice9_Release(d3d_device9);
 
-    if (d3d9 != nullptr)
+    if (d3d9)
         IDirect3D9_Release(d3d9);
 
-    if (dummy_window != nullptr)
+    if (dummy_window)
         ::DestroyWindow(dummy_window);
 
     if (dummy_class != 0)
@@ -221,13 +228,41 @@ void Detours::uninitialize()
 {
     is_initialized_ = false;
 
-    end_scene_detour_.uninitialize();
-    test_coop_level_detour_.uninitialize();
-    reset_detour_.uninitialize();
+    if (is_detoured_) {
+        LONG d_result = 0;
 
-    trampoline_cache_.uninitialize();
+        d_result = ::DetourTransactionBegin();
+        d_result = ::DetourUpdateThread(::GetCurrentThread());
 
-    if (d3d9_library_ != nullptr) {
+        d_result = ::DetourDetach(
+            &reinterpret_cast<PVOID&>(real_end_scene_),
+            fake_end_scene_);
+
+        d_result = ::DetourDetach(
+            &reinterpret_cast<PVOID&>(real_test_coop_level_),
+            fake_test_coop_level_);
+
+        d_result = ::DetourDetach(
+            &reinterpret_cast<PVOID&>(real_reset_),
+            fake_reset_);
+
+        if (d_result != 0)
+            d_result = ::DetourTransactionAbort();
+        else
+            d_result = ::DetourTransactionCommit();
+
+        is_detoured_ = false;
+    }
+
+    fake_end_scene_ = nullptr;
+    fake_test_coop_level_ = nullptr;
+    fake_reset_ = nullptr;
+
+    real_end_scene_ = nullptr;
+    real_test_coop_level_ = nullptr;
+    real_reset_ = nullptr;
+
+    if (d3d9_library_) {
         ::FreeLibrary(d3d9_library_);
         d3d9_library_ = nullptr;
     }
@@ -246,23 +281,20 @@ const std::wstring& Detours::get_error_string() const
 HRESULT STDMETHODCALLTYPE Detours::d3dd9_end_scene(
     LPDIRECT3DDEVICE9 self)
 {
-    return reinterpret_cast<FP_D3DD9_END_SCENE>(
-        end_scene_detour_.get_trampoline())(self);
+    return real_end_scene_(self);
 }
 
 HRESULT STDMETHODCALLTYPE Detours::d3dd9_test_coop_level(
     LPDIRECT3DDEVICE9 self)
 {
-    return reinterpret_cast<FP_D3DD9_TEST_COOP_LEVEL>(
-        test_coop_level_detour_.get_trampoline())(self);
+    return real_test_coop_level_(self);
 }
 
 HRESULT STDMETHODCALLTYPE Detours::d3dd9_reset(
     LPDIRECT3DDEVICE9 self,
     D3DPRESENT_PARAMETERS* presentation_parameters)
 {
-    return reinterpret_cast<FP_D3DD9_RESET>(
-        reset_detour_.get_trampoline())(self, presentation_parameters);
+    return real_reset_(self, presentation_parameters);
 }
 
 
