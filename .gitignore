@@ -7,4 +7,5 @@ obj.X86
 *.ncb
 *.vxcproj.user
 *.sdf
+*.opensdf
 *.user
