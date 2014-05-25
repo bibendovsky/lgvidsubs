@@ -19,12 +19,12 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <PlatformToolset>v120_xp</PlatformToolset>
-    <CharacterSet>NotSet</CharacterSet>
+    <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <PlatformToolset>v120_xp</PlatformToolset>
-    <CharacterSet>NotSet</CharacterSet>
+    <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
@@ -44,16 +44,20 @@
     <PostBuildEventUseInBuild>false</PostBuildEventUseInBuild>
     <TargetName>lgvid</TargetName>
     <RunCodeAnalysis>false</RunCodeAnalysis>
+    <OutDir>$(SolutionDir)$(Configuration)\$(ProjectName)\</OutDir>
+    <IntDir>$(Configuration)\$(ProjectName)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
     <TargetName>lgvid</TargetName>
+    <OutDir>$(SolutionDir)$(Configuration)\$(ProjectName)\</OutDir>
+    <IntDir>$(Configuration)\$(ProjectName)\</IntDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <Optimization>Disabled</Optimization>
       <AdditionalIncludeDirectories>$(DXSDK_DIR)\Include;..\ffmpeg-2.2.2-nd-msvc2013-static-32\include;detours3\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;NOMINMAX;_BIND_TO_CURRENT_VCLIBS_VERSION=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;NOMINMAX;_BIND_TO_CURRENT_VCLIBS_VERSION=1;LGVS_USE_SUBS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MinimalRebuild>true</MinimalRebuild>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
@@ -74,11 +78,12 @@
     <ClCompile>
       <OmitFramePointers>true</OmitFramePointers>
       <AdditionalIncludeDirectories>$(DXSDK_DIR)\Include;..\ffmpeg-2.2.2-nd-msvc2013-static-32\include;detours3\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;NOMINMAX;_BIND_TO_CURRENT_VCLIBS_VERSION=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;NOMINMAX;_BIND_TO_CURRENT_VCLIBS_VERSION=1;LGVS_USE_SUBS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <BufferSecurityCheck>false</BufferSecurityCheck>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <StringPooling>true</StringPooling>
+      <WarningLevel>Level4</WarningLevel>
     </ClCompile>
     <Link>
       <ModuleDefinitionFile>lgvidsubs.def</ModuleDefinitionFile>

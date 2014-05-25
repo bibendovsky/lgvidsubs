@@ -1,7 +1,11 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Express 2012 for Windows Desktop
+# Visual Studio Express 2013 for Windows Desktop
+VisualStudioVersion = 12.0.30501.0
+MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "lgvidsubs", "lgvidsubs.vcxproj", "{CE80D167-0BBC-4A3A-BF78-6A13B556CABB}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "lgvid", "lgvid.vcxproj", "{8B65007C-2A03-4411-BF56-06E04E4B15DF}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -13,6 +17,10 @@ Global
 		{CE80D167-0BBC-4A3A-BF78-6A13B556CABB}.Debug|Win32.Build.0 = Debug|Win32
 		{CE80D167-0BBC-4A3A-BF78-6A13B556CABB}.Release|Win32.ActiveCfg = Release|Win32
 		{CE80D167-0BBC-4A3A-BF78-6A13B556CABB}.Release|Win32.Build.0 = Release|Win32
+		{8B65007C-2A03-4411-BF56-06E04E4B15DF}.Debug|Win32.ActiveCfg = Debug|Win32
+		{8B65007C-2A03-4411-BF56-06E04E4B15DF}.Debug|Win32.Build.0 = Debug|Win32
+		{8B65007C-2A03-4411-BF56-06E04E4B15DF}.Release|Win32.ActiveCfg = Release|Win32
+		{8B65007C-2A03-4411-BF56-06E04E4B15DF}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

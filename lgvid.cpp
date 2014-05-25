@@ -24,9 +24,10 @@
 #include <algorithm>
 #include <condition_variable>
 #include <mutex>
+#include <system_error>
 #include <thread>
 #include <vector>
-#include <windows.h>
+#include <ObjBase.h>
 
 extern "C" {
 #include <libavcodec/avcodec.h>
@@ -39,8 +40,9 @@ extern "C" {
 
 #include "lgviddecoder.h"
 
-// BBi
+#ifdef LGVS_USE_SUBS
 #include "lgvs_lgvid_subs.h"
+#endif // LGVS_NO_SUBS
 
 
 #ifdef _DEBUG
@@ -494,8 +496,9 @@ struct VideoState {
     float           skip_frames_index;
     int             refresh;
 
-    // BBi
+#ifdef LGVS_USE_SUBS
     lgvs::LgVidSubs subs;
+#endif // LGVS_NO_SUBS
 
     VideoState(cLGVideoDecoder *pOuter_) :
         pOuter(pOuter_),
@@ -537,11 +540,10 @@ struct VideoState {
         skip_frames(),
         skip_frames_index(),
         refresh()
-
-        // BBi
+#ifdef LGVS_USE_SUBS
         ,
         subs()
-        // BBi
+#endif // LGVS_NO_SUBS
     {
         audio_frame = av_frame_alloc();
 
@@ -678,8 +680,9 @@ struct VideoState {
         for (int i = 0; i < VIDEO_PICTURE_QUEUE_SIZE; ++i)
             pictq[i].bmp = pOuter->m_pHostIface->CreateImageBuffer();
 
-        // BBi
+#ifdef LGVS_USE_SUBS
         subs.initialize(pOuter->m_pHostIface, filename);
+#endif // LGVS_NO_SUBS
 
         return TRUE;
     }
@@ -777,9 +780,9 @@ struct VideoState {
 
                 // show the picture!
 
-                // BBi
+#ifdef LGVS_USE_SUBS
                 if (!subs.has_subtitles()) {
-                    // BBi
+#endif // LGVS_NO_SUBS
 
                     pOuter->m_pHostIface->BeginVideoFrame(pictq[pictq_rindex].bmp);
 
@@ -795,10 +798,10 @@ struct VideoState {
 
                     pOuter->m_pHostIface->EndVideoFrame();
 
-                // BBi
+#ifdef LGVS_USE_SUBS
                 } else
                     subs.refresh_video = true;
-                // BBi
+#endif // LGVS_NO_SUBS
             }
         } else
             schedule_refresh(100);
@@ -1538,12 +1541,12 @@ STDMETHODIMP_(BOOL) cLGVideoDecoder::IsVideoFrameAvailable()
         return TRUE;
     }
 
-    // BBi
+#ifdef LGVS_USE_SUBS
     if (is->subs.has_subtitles()) {
         if (is->audio_finished == 0 || is->video_finished == 0)
             return TRUE;
     }
-    // BBi
+#endif // LGVS_NO_SUBS
 
     return FALSE;
 }
@@ -1555,7 +1558,7 @@ STDMETHODIMP_(void) cLGVideoDecoder::RequestVideoFrame()
         is->refresh = 0;
     }
 
-    // BBi
+#ifdef LGVS_USE_SUBS
     if (is != nullptr && is->subs.has_subtitles()) {
         if (is->audio_finished == 0 || is->video_finished == 0) {
             double pts = is->get_master_clock();
@@ -1584,7 +1587,7 @@ STDMETHODIMP_(void) cLGVideoDecoder::RequestVideoFrame()
             is->subs.refresh_subtitle = false;
         }
     }
-    // BBi
+#endif // LGVS_NO_SUBS
 }
 
 STDMETHODIMP_(void) cLGVideoDecoder::RequestAudio(unsigned int len)
