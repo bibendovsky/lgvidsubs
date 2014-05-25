@@ -36,7 +36,7 @@ public:
     typedef HRESULT (STDMETHODCALLTYPE* FP_D3DD9_TEST_COOP_LEVEL)
         (LPDIRECT3DDEVICE9 self);
 
-    typedef HRESULT (STDMETHODCALLTYPE* FP_D3DD9_END_RESET)
+    typedef HRESULT (STDMETHODCALLTYPE* FP_D3DD9_RESET)
         (LPDIRECT3DDEVICE9 self,
         D3DPRESENT_PARAMETERS* presentation_parameters);
 
@@ -47,7 +47,7 @@ public:
     bool initialize(
         FP_D3DD9_END_SCENE fake_end_scene,
         FP_D3DD9_TEST_COOP_LEVEL fake_test_coop_level,
-        FP_D3DD9_END_RESET fake_reset);
+        FP_D3DD9_RESET fake_reset);
 
     void uninitialize();
 
@@ -56,13 +56,13 @@ public:
     const std::wstring& get_error_string() const;
 
     HRESULT STDMETHODCALLTYPE d3dd9_end_scene(
-        LPDIRECT3DDEVICE9 zis);
+        LPDIRECT3DDEVICE9 self);
 
     HRESULT STDMETHODCALLTYPE d3dd9_test_coop_level(
-        LPDIRECT3DDEVICE9 zis);
+        LPDIRECT3DDEVICE9 self);
 
     HRESULT STDMETHODCALLTYPE d3dd9_reset(
-        LPDIRECT3DDEVICE9 zis,
+        LPDIRECT3DDEVICE9 self,
         D3DPRESENT_PARAMETERS* presentation_parameters);
 
 

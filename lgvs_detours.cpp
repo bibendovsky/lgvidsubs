@@ -47,7 +47,7 @@ Detours::~Detours()
 bool Detours::initialize(
     FP_D3DD9_END_SCENE fake_end_scene,
     FP_D3DD9_TEST_COOP_LEVEL fake_test_coop_level,
-    FP_D3DD9_END_RESET fake_reset)
+    FP_D3DD9_RESET fake_reset)
 {
     uninitialize();
 
@@ -261,7 +261,7 @@ HRESULT STDMETHODCALLTYPE Detours::d3dd9_reset(
     LPDIRECT3DDEVICE9 self,
     D3DPRESENT_PARAMETERS* presentation_parameters)
 {
-    return reinterpret_cast<FP_D3DD9_END_RESET>(
+    return reinterpret_cast<FP_D3DD9_RESET>(
         reset_detour_.get_trampoline())(self, presentation_parameters);
 }
 
