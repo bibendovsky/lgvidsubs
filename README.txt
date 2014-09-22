@@ -9,6 +9,9 @@ https://github.com/bibendovsky/lgvidsubs
 Original link to the NewDark patch:
 http://ariane4ever.free.fr/ariane4ever/viewtopic.php?f=2&t=4287&start=0&st=0&sk=t&sd=a&sid=5fb30e2ac9f6a8491c14c973b7176eb1
 
+WARNING!
+The project is obsolete.
+Use NewDark patch v1.22+ for Thief/Thief2 and v2.43+ for System Shock 2.
 
 System requirements
 -------------------
